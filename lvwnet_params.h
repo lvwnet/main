@@ -28,6 +28,17 @@ MODULE_PARM_DESC (debug, "Enable debug of lvwnet");
 
 
 
+/**
+ * Define if debug is active for lvwnet
+ * 0 - disabled
+ * 1 - enabled
+ */
+static int send_all_to_controller = 0;
+module_param (send_all_to_controller, int, 0444);
+MODULE_PARM_DESC (send_all_to_controller, 
+	"Send all frames to controller, instead of others hosts direct");
+
+
 
 /**
  * Define if debug is active for lvwnet

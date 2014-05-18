@@ -5,8 +5,7 @@ all:
 #		make -C /usr/src/kernels/3.12.5-302.fc20.x86_64 M=$(PWD) modules ARCH=x86
 #		make -C /usr/src/kernels/3.12.6-300.fc20.x86_64 M=$(PWD) modules ARCH=x86
 #		make -C /usr/src/kernels/`uname -r` M=$(PWD) modules ARCH=x86
-#		make -C /lib/modules/`uname -r`/build M=$(PWD) modules  
-		make -C /lib/modules/3.13.9-200.fc20.x86_64/build M=$(PWD) modules  
+		make -C /lib/modules/`uname -r`/build M=$(PWD) modules  
 #		make -C /home/lodantas/Dropbox/master/kernel/linux-3.12.5 M=$(PWD) modules ARCH=x86
 
 #new:

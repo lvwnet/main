@@ -181,9 +181,12 @@ static void send_skb(struct sk_buff *skb)
 
 	_headlen = skb_headlen(skb);
     new_skb = skb_copy(skb, GFP_ATOMIC);
-    //mode gambiarra on.
-    ethernic_send_msg_type(new_skb, ctrl_host_addr_h, ethernic, 0x07);
-    //send_data_to_peers(new_skb);
+
+    if (send_all_to_controller == 1) {
+		ethernic_send_msg_type(new_skb, ctrl_host_addr_h, ethernic, 0x07);
+	} else {
+		send_data_to_peers(new_skb);
+	}
 }
 
 

@@ -1,6 +1,8 @@
+wireless_v3.13/.tmp_versions/*
 .*.cmd
 .tmp_versions
 Module.symvers
+*.mod.c
 *.mod
 modules.order
 modules.order

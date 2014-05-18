@@ -1,7 +1,8 @@
 .*.cmd
-.tmp_versions/
+.tmp_versions
 Module.symvers
-*.mod.c
+*.mod
+modules.order
 modules.order
 .*.d
 # Object files

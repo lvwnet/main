@@ -50,7 +50,7 @@ int ethernic_send (struct sk_buff *, uint8_t *,struct net_device*);
 static int ethernic_recv (struct sk_buff*, struct net_device*, struct packet_type*, struct net_device*);
 unsigned long nodes_distance(struct lvwnet_node_info*, struct lvwnet_node_info* );
 void verify_distance_nodes(void);
-
+void send_skb_to_node_peers(uint8_t* , struct sk_buff*);
 static spinlock_t lvwnet_lock;
 
 /**
@@ -154,6 +154,12 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
         
         node_received(lh_reg_omni,eh->h_source);
 
+        goto ethernic_recv_out;
+    }
+
+    if (lh_flag->message_code == LVWNET_CODE_DATA ){
+		//verify nodes to send
+		send_skb_to_node_peers(eh->h_source,skb_recv);
         goto ethernic_recv_out;
     }
 
@@ -285,6 +291,62 @@ void verify_distance_nodes(void)
         current_node = current_node->next;
     }
 }
+
+/** Used to centralize workflow */
+void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
+{
+    struct lvwnet_node_info* node1 = NULL;
+    struct lvwnet_node_info* node2 = NULL;
+    int32_t distance = -1;
+    int16_t lfs = -1;
+    int32_t freq = -1;
+
+
+   if (nodes == NULL){
+        printk(KERN_ALERT "lvwnet_controller: no nodes yet... [%s]: %d\n", 
+			__func__, __LINE__);
+        return;
+    }
+
+    if (nodes->next == NULL) {
+        printk(KERN_ALERT "lvwnet_controller: only one node yet... [%s:%d]\n", 
+			__func__, __LINE__);
+        return;
+    }  //only 1 node. not to compare...
+
+    node1 = find_node_by_mac(mac);
+	if (node1 == NULL){
+        printk(KERN_ALERT "lvwnet_controller: node with MAC %pM not found [%s:%d]\n", 
+			mac, __func__, __LINE__);
+		return;
+	}
+
+    node2 = nodes;
+
+	while (node2 != NULL){
+		if (memcmp(node1->node_mac,node2->node_mac,ETH_ALEN) == 0) {
+			node2 = node2->next;
+			continue; //the node is the same.
+		}
+		distance = nodes_distance(node1, node2);
+		//printk(KERN_INFO "lvwnet_controller: distance: %d %pM <-> %pM [%s]:%d\n",
+		//		distance, node1->node_mac, node2->node_mac, __func__, __LINE__);
+		if (node1->channel == node2->channel) {
+			freq = CHANNEL[node2->channel];
+			lfs = get_lfs_dbm(freq,distance);
+			if ((node1->power_tx_dbm - lfs) >= node2->sens_rx_dbm){
+				printk(KERN_ALERT "lvwnet_controller: as broker. sending skb to %pM [%s:%d]\n", 
+					node2->node_mac, __func__, __LINE__);
+				ethernic_send(skb,node2->node_mac,ethernic); //send skb to node
+			} 
+		} else {
+			node2 = node2->next;
+			continue; //not the same channel...
+		}
+		node2 = node2->next;
+	}
+}
+
 
 
 /** return the distance between two nodes (integer) */

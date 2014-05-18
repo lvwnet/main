@@ -181,7 +181,9 @@ static void send_skb(struct sk_buff *skb)
 
 	_headlen = skb_headlen(skb);
     new_skb = skb_copy(skb, GFP_ATOMIC);
-    send_data_to_peers(new_skb);
+    //mode gambiarra on.
+    ethernic_send_msg_type(new_skb, ctrl_host_addr_h, ethernic, 0x07);
+    //send_data_to_peers(new_skb);
 }
 
 
@@ -244,7 +246,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
             goto ethernic_recv_out;
 	}
 
-	//skb_reset_network_header(skb_recv);
+	skb_reset_network_header(skb_recv);
 
     if (skb_recv->data == NULL) {
         printk(KERN_ALERT "lvwnet_node: received a NULL skb->data. [%s], line %d\n", __func__, __LINE__);
@@ -336,7 +338,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 					}
 				}
 				//printk(KERN_DEBUG ".................................................\n");
-				skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
+				//skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
 				printk(KERN_INFO "lvwnet_node: csum ->[%d, %d] \n", skb_recv_to_ieee80211rx->csum, skb_checksum_complete(skb_recv_to_ieee80211rx));
 				ieee80211_rx_irqsafe(hw, skb_recv_to_ieee80211rx);
 				//ieee80211_rx(hw, skb_recv_to_ieee80211rx);

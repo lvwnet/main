@@ -92,7 +92,7 @@ int ethernic_send (struct sk_buff *skb, uint8_t *dest_mac, struct net_device* _d
 
         if (ret < 0)
             printk (KERN_ALERT "lvwnet: failed to send frame. [%s:%d]\n", __func__, __LINE__);
-
+        
         goto ethernic_send_out;
 
     }

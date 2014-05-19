@@ -31,6 +31,10 @@
 #include <linux/ktime.h>
 #include <net/genetlink.h>
 #include "mac80211_hwsim.h"
+/** lvwnet begin mac param */
+#include "mac_strtoh.h"
+/** lvwnet end mac param */
+
 
 #define WARN_QUEUE 100
 #define MAX_QUEUE 200
@@ -56,6 +60,12 @@ MODULE_PARM_DESC(paged_rx, "Use paged SKBs for RX instead of linear ones");
 static bool rctbl = false;
 module_param(rctbl, bool, 0444);
 MODULE_PARM_DESC(rctbl, "Handle rate control table");
+
+/** lvwnet begin mac param */
+static char* macaddr = NULL;
+module_param(macaddr, charp, 0444);
+MODULE_PARM_DESC(ctrl_host_addr, "MAC Address of the first wireless NIC");
+/** lvwnet end mac param */
 
 /**
  * enum hwsim_regtest - the type of regulatory tests we offer
@@ -1984,6 +1994,13 @@ static int mac80211_hwsim_create_radio(int channels, const char *reg_alpha2,
 	addr[0] = 0x02;
 	addr[3] = idx >> 8;
 	addr[4] = idx;
+    /** lvwnet begin mac param */
+    if (macaddr != NULL ) {
+          mac_strtoh(addr,macaddr);
+          printk(KERN_DEBUG "mac80211_hwsim: mac address was set [%pM]\n", addr);
+    }
+    /** lvwnet end mac param */
+
 	memcpy(data->addresses[0].addr, addr, ETH_ALEN);
 	memcpy(data->addresses[1].addr, addr, ETH_ALEN);
 	data->addresses[1].addr[0] |= 0x40;

@@ -169,7 +169,7 @@ static void send_skb(struct sk_buff *skb)
 {
     struct sk_buff *new_skb;
     int _headlen = -1;
-   // char teste[128];
+
     if (lvwnet_ptr_skb == NULL) {
         printk(KERN_ALERT "lvwnet_node: ptr_skb is NULL. from [%s]\n", __func__);
         return;
@@ -249,7 +249,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
             goto ethernic_recv_out;
 	}
 
-	skb_reset_network_header(skb_recv);
+	//skb_reset_network_header(skb_recv);
 
     if (skb_recv->data == NULL) {
         printk(KERN_ALERT "lvwnet_node: received a NULL skb->data. [%s], line %d\n", __func__, __LINE__);
@@ -258,8 +258,9 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
 
     lh_flag = (struct lvwnet_only_flag_header *) skb_recv->data;
-
-    if (lh_flag->message_code == 0x6){ /** TODO colocar define */
+    
+	/*************************************************************************/
+    if (lh_flag->message_code == LVWNET_CODE_PEER_INFO){
         qtd_msg_peer_info++;
         printk(KERN_INFO "lvwnet_node: received a control frame (0x6) from %pM (Peers information).\n", eh->h_source);
         if (is_controller == 1){
@@ -281,25 +282,28 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
         goto ethernic_recv_out;
 
     }
-
-    if (lh_flag->message_code == 0x2) {
+	/*************************************************************************/
+    if (lh_flag->message_code == LVWNET_CODE_REG_OMNI) {
         qtd_msg_reg_omni++;
         printk(KERN_INFO "lvwnet_node: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
 		printk(KERN_ALERT "lvwnet_node: received registration frame (0x2) but not controller... [%s]: %d\n", __func__, __LINE__);
 		goto ethernic_recv_out;
     }
-
-    if (lh_flag->message_code == 0x07) {
+	/*************************************************************************/
+    if (lh_flag->message_code == LVWNET_CODE_DATA) {
         qtd_msg_data++;
 
-		if (wifi_interf == NULL){
-			wifi_interf = find_nic("wlan0"); /** TODO melhorar isso... */
+		/**TODO: needs this? */
+		/*if (wifi_interf == NULL){
+			wifi_interf = find_nic("wlan0"); 
 			if (wifi_interf == NULL) {
 				printk(KERN_ALERT "lvwnet_node: wireless interface (%s) not found! [%s:%d]\n", "wlan0", __func__, __LINE__);
 				goto ethernic_recv_out;
 			}
-		}
-
+		}*/
+		
+		//skb->dev = wifi_interf;
+		
         if (hw == NULL) {
             printk(KERN_ALERT "lvwnet_node: hw is NULL. Wireless NIC is present? (maybe not SoftMAC compatible...) [%s]\n", __func__);
         } else {
@@ -336,15 +340,15 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
 				if (skb_recv_to_ieee80211rx != NULL){
 					if (skb_recv_to_ieee80211rx->data != NULL){
-						//print_hex_dump(KERN_DEBUG, "0X0808 92(data    ): ", DUMP_PREFIX_NONE,
+						//print_hex_dump(KERN_DEBUG, "0x0808 (data): ", DUMP_PREFIX_NONE,
 						//			16, 1, skb_recv_to_ieee80211rx->data, len_data, 0);
 					}
 				}
 				//printk(KERN_DEBUG ".................................................\n");
 				//skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
-				printk(KERN_INFO "lvwnet_node: csum ->[%d, %d] \n", skb_recv_to_ieee80211rx->csum, skb_checksum_complete(skb_recv_to_ieee80211rx));
-				ieee80211_rx_irqsafe(hw, skb_recv_to_ieee80211rx);
-				//ieee80211_rx(hw, skb_recv_to_ieee80211rx);
+				printk(KERN_DEBUG "lvwnet_node: csum ->[%d, %d] \n", skb_recv_to_ieee80211rx->csum, skb_checksum_complete(skb_recv_to_ieee80211rx));
+				//ieee80211_rx_irqsafe(hw, skb_recv_to_ieee80211rx);
+				ieee80211_rx(hw, skb_recv_to_ieee80211rx);
             } 
         } 
         goto ethernic_recv_out;
@@ -644,15 +648,15 @@ static void __exit exit_lvwnet(void)
     //extern function from modified mac80211
     
     dev_remove_pack(&pkt_type_lvwnet);
-    dev_remove_pack(&pkt_type_lvwnet_data);
-    if (is_controller == 0)
-		lvwnet_set_unloaded();
-		__unset_ptrs_hw();
-		__exit_sysfs();
-        del_timer_sync(&reg_timer);
+    //dev_remove_pack(&pkt_type_lvwnet_data);
+    //if (is_controller == 0)
+	lvwnet_set_unloaded();
+	__unset_ptrs_hw();
+	__exit_sysfs();
+	del_timer_sync(&reg_timer);
 
-    if (is_controller == 1)
-        del_timer_sync(&send_peer_info_timer);
+    //if (is_controller == 1)
+    //   del_timer_sync(&send_peer_info_timer);
     //clean_timers();
     /** TODO: uses netlink for iw like utility */
     //lvwnet_knetlink_exit();

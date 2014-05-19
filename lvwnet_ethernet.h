@@ -254,10 +254,11 @@ int ethernic_send_msg_type (struct sk_buff *skb, uint8_t *dest_mac,
 		//skb_reset_mac_header(newskb);
 
         ret = dev_queue_xmit (newskb);
-        goto ethernic_send_out;
 
         if (ret < 0)
             printk (KERN_ALERT "lvwnet: failed to send frame. [%s:%d]\n", __func__, __LINE__);
+
+        goto ethernic_send_out;
 
     }
 

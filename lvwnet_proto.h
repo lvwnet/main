@@ -3,9 +3,9 @@
 
 #include <linux/delay.h>
 
-#define LVWNET_CODE_PEER_INFO    0x6
-#define LVWNET_CODE_REG_OMNI     0x2
-#define LVWNET_CODE_DATA         0x7
+#define LVWNET_CODE_PEER_INFO    0x06
+#define LVWNET_CODE_REG_OMNI     0x02
+#define LVWNET_CODE_DATA         0x07
 #define LVWNET_PEER_UNREACHABLE -256
 
 /** Time to send registration to controller from peers */

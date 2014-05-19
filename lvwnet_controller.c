@@ -79,7 +79,7 @@ static int send_peer_info_timer_init(void)
     send_peer_info_timer.expires = jiffies + (HZ * 10); /* first time in 10 seconds, others ... */
     add_timer(&send_peer_info_timer); /* Starting the timer */
 
-    printk(KERN_INFO"lvwnet_controller: timer loaded... [%s]: %d\n", __func__, __LINE__);
+    printk(KERN_INFO"lvwnet_ctrl: timer loaded... [%s]: %d\n", __func__, __LINE__);
     return 0;
 }
 
@@ -104,13 +104,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 	if( skb_mac_header_was_set(skb) ) {
             eh = eth_hdr(skb);
 	} else {
-            printk(KERN_ALERT "lvwnet_controller: ---- ---- - - skb_mac_header NOT set!\n");
+            printk(KERN_ALERT "lvwnet_ctrl: ---- ---- - - skb_mac_header NOT set!\n");
             goto ethernic_recv_out;
 	}
 
     //normal node
 	if (memcmp( dev->dev_addr, eh->h_dest, ETH_ALEN) != 0 ) {
-            printk (KERN_ALERT "lvwnet_controller: frame to other host. Device [%s] is in promiscuous mode? to: %pM, from: %pM.\n",
+            printk (KERN_ALERT "lvwnet_ctrl: frame to other host. Device [%s] is in promiscuous mode? to: %pM, from: %pM.\n",
                     dev->name, eh->h_dest, eh->h_source);
             goto ethernic_recv_out;
 	}
@@ -119,14 +119,14 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
     skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
 
 	if (skb_recv == NULL){
-            printk(KERN_ALERT "lvwnet_controller: ERR -> skb_recv(2) == NULL\n");
+            printk(KERN_ALERT "lvwnet_ctrl: ERR -> skb_recv(2) == NULL\n");
             goto ethernic_recv_out;
 	}
 
 	//skb_reset_network_header(skb_recv);
 
     if (skb_recv->data == NULL) {
-        printk(KERN_ALERT "lvwnet_controller: received a NULL skb->data. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_ALERT "lvwnet_ctrl: received a NULL skb->data. [%s], line %d\n", __func__, __LINE__);
         goto ethernic_recv_out;
     }
 
@@ -135,13 +135,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
     if (lh_flag->message_code == 0x06){ /** TODO colocar define */
         qtd_msg_peer_info++;
-		printk(KERN_ALERT "lvwnet_controller: received info frame (0x6) but is the controller... [%s]: %d\n", __func__, __LINE__);
+		printk(KERN_ALERT "lvwnet_ctrl: received info frame (0x6) but is the controller... [%s]: %d\n", __func__, __LINE__);
         goto ethernic_recv_out;
     }
 
     if (lh_flag->message_code == 0x02) {
         qtd_msg_reg_omni++;
-        printk(KERN_INFO "lvwnet_controller: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
+        printk(KERN_INFO "lvwnet_ctrl: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
 
         lh_reg_omni = (struct lvwnet_reg_omni_header *) skb_recv->data;
 
@@ -165,10 +165,10 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
     if (lh_flag->message_code == 0x0) {
         qtd_msg_data++;
-		printk(KERN_ALERT "lvwnet_controller: received a data frame, but I'm the controller... o.O [%d] \n", lh_flag->message_code);
+		printk(KERN_ALERT "lvwnet_ctrl: received a data frame, but I'm the controller... o.O [%d] \n", lh_flag->message_code);
         goto ethernic_recv_out;
     } else {
-		printk(KERN_ALERT "lvwnet_controller: received a unknow message code [%d] from %pM \n", lh_flag->message_code, eh->h_source);
+		printk(KERN_ALERT "lvwnet_ctrl: received a unknow message code [%d] from %pM \n", lh_flag->message_code, eh->h_source);
         goto ethernic_recv_out;
     }
 
@@ -208,12 +208,12 @@ void verify_distance_nodes(void)
 	/** TODO colocar flag de se existiu alteracao */	
 
    if (nodes == NULL){
-        printk(KERN_ALERT "lvwnet_controller: no nodes yet... [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_ALERT "lvwnet_ctrl: no nodes yet... [%s]: %d\n", __func__, __LINE__);
         return;
     }
 
     if (nodes->next == NULL) {
-        printk(KERN_ALERT "lvwnet_controller: only one node yet... [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_ALERT "lvwnet_ctrl: only one node yet... [%s]: %d\n", __func__, __LINE__);
         return;
     }  //only 1 node. not to compare...
 
@@ -223,7 +223,7 @@ void verify_distance_nodes(void)
         next_node = current_node->next;
         distance = nodes_distance(current_node, next_node);
 
-        printk(KERN_INFO "lvwnet_controller: distance: %d %pM <-> %pM [%s]:%d\n",
+        printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
                distance, current_node->node_mac, next_node->node_mac,  __func__, __LINE__);
 
 		/** TODO calcular delay inerente a distância - funcao linear */
@@ -231,7 +231,7 @@ void verify_distance_nodes(void)
 		if (current_node->channel == next_node->channel) {
 			freq = CHANNEL[current_node->channel];
 			lfs = get_lfs_dbm(freq,distance);
-			printk(KERN_INFO "lvwnet_controller: freq %d, lfs: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
+			printk(KERN_INFO "lvwnet_ctrl: freq %d, lfs: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
 					freq, lfs,current_node->power_tx_dbm, next_node->sens_rx_dbm  );
 
 			if ((current_node->power_tx_dbm - lfs) >= next_node->sens_rx_dbm){
@@ -257,10 +257,10 @@ void verify_distance_nodes(void)
         while (next_node->next != NULL){
             next_node = next_node->next;
             if (memcmp(next_node->node_mac,current_node->node_mac,ETH_ALEN) == 0) { //really need?
-                printk(KERN_ALERT "lvwnet_controller: identical nodes in list? BUG!!! o.O [%s]: %d\n", __func__, __LINE__);
+                printk(KERN_ALERT "lvwnet_ctrl: identical nodes in list? BUG!!! o.O [%s]: %d\n", __func__, __LINE__);
             }
             distance = nodes_distance(current_node, next_node);
-            printk(KERN_INFO "lvwnet_controller: distance: %d %pM <-> %pM [%s]:%d\n",
+            printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
 					distance, current_node->node_mac, next_node->node_mac, __func__, __LINE__);
 			/** TODO: criar uma funcaozinha pra isso... */
 			if (current_node->channel == next_node->channel) {
@@ -303,20 +303,20 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 
 
    if (nodes == NULL){
-        printk(KERN_ALERT "lvwnet_controller: no nodes yet... [%s]: %d\n", 
+        printk(KERN_ALERT "lvwnet_ctrl: no nodes yet... [%s]: %d\n", 
 			__func__, __LINE__);
         return;
     }
 
     if (nodes->next == NULL) {
-        printk(KERN_ALERT "lvwnet_controller: only one node yet... [%s:%d]\n", 
+        printk(KERN_ALERT "lvwnet_ctrl: only one node yet... [%s:%d]\n", 
 			__func__, __LINE__);
         return;
     }  //only 1 node. not to compare...
 
     node1 = find_node_by_mac(mac);
 	if (node1 == NULL){
-        printk(KERN_ALERT "lvwnet_controller: node with MAC %pM not found [%s:%d]\n", 
+        printk(KERN_ALERT "lvwnet_ctrl: node with MAC %pM not found [%s:%d]\n", 
 			mac, __func__, __LINE__);
 		return;
 	}
@@ -329,14 +329,14 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 			continue; //the node is the same.
 		}
 		distance = nodes_distance(node1, node2);
-		//printk(KERN_INFO "lvwnet_controller: distance: %d %pM <-> %pM [%s]:%d\n",
+		//printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
 		//		distance, node1->node_mac, node2->node_mac, __func__, __LINE__);
 		if (node1->channel == node2->channel) {
 			freq = CHANNEL[node2->channel];
 			lfs = get_lfs_dbm(freq,distance);
 			if ((node1->power_tx_dbm - lfs) >= node2->sens_rx_dbm){
-				printk(KERN_ALERT "lvwnet_controller: as broker. sending skb to %pM [%s:%d]\n", 
-					node2->node_mac, __func__, __LINE__);
+				//printk(KERN_ALERT "lvwnet_ctrl: broker, sending skb from %pM to %pM [%s:%d]\n", 
+				//	node1->node_mac, node2->node_mac, __func__, __LINE__);
 				ethernic_send(skb,node2->node_mac,ethernic); //send skb to node
 			} 
 		} else {
@@ -357,17 +357,17 @@ unsigned long nodes_distance(struct lvwnet_node_info* node1, struct lvwnet_node_
     uint32_t mod_z = 0;
 
     if (node1 == NULL) {
-        printk(KERN_ALERT "lvwnet_controller: received a NULL lvwnet_node_info (node1). [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_ALERT "lvwnet_ctrl: received a NULL lvwnet_node_info (node1). [%s]: %d\n", __func__, __LINE__);
         return -1;
     }
     if (node2 == NULL) {
-        printk(KERN_ALERT "lvwnet_controller: received a NULL lvwnet_node_info (node2). [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_ALERT "lvwnet_ctrl: received a NULL lvwnet_node_info (node2). [%s]: %d\n", __func__, __LINE__);
         return -1;
     }
 
     mod_x = (node1->pos_x - node2->pos_x) * (node1->pos_x - node2->pos_x);
     mod_y = (node1->pos_y - node2->pos_y) * (node1->pos_y - node2->pos_y);
-    mod_x = (node1->pos_z - node2->pos_z) * (node1->pos_z - node2->pos_z);
+    mod_z = (node1->pos_z - node2->pos_z) * (node1->pos_z - node2->pos_z);
 
     return int_sqrt((mod_x + mod_y + mod_z));
 }
@@ -376,13 +376,13 @@ unsigned long nodes_distance(struct lvwnet_node_info* node1, struct lvwnet_node_
  */
 static int __init init_lvwnet(void)
 {
-    printk(KERN_INFO "lvwnet_controller: Starting module %s now.\n", LVWNET_VERSION);
+    printk(KERN_INFO "lvwnet_ctrl: Starting module %s now.\n", LVWNET_VERSION);
     if (!__params_verify())
         return -EINVAL; //invalid params
 
     ethernic = find_nic(ethernic_name);
     if (ethernic == NULL){
-        printk(KERN_ALERT "lvwnet_controller: ethernet interface [%s] not found.\n", ethernic_name);
+        printk(KERN_ALERT "lvwnet_ctrl: ethernet interface [%s] not found.\n", ethernic_name);
         return -EINVAL;
     }
 
@@ -392,9 +392,9 @@ static int __init init_lvwnet(void)
 
 	send_peer_info_timer_init();
 
-    printk(KERN_INFO "lvwnet_controller: Registering ethertype 0x0808[lvwnet].\n");
+    printk(KERN_INFO "lvwnet_ctrl: Registering ethertype 0x0808[lvwnet].\n");
     dev_add_pack(&pkt_type_lvwnet);
-    printk(KERN_INFO "lvwnet_controller: Initializing netlink interface. (not ready yet... sorry...)\n");
+    printk(KERN_INFO "lvwnet_ctrl: Initializing netlink interface. (not ready yet... sorry...)\n");
     return 0;
 }
 
@@ -410,7 +410,7 @@ static void __exit exit_lvwnet(void)
 	__exit_sysfs();
     /** TODO: uses netlink for iw like utility */
     //lvwnet_knetlink_exit();
-    printk(KERN_INFO "lvwnet_controller: Exiting module now. Version %s.\n", LVWNET_VERSION);
+    printk(KERN_INFO "lvwnet_ctrl: Exiting module now. Version %s.\n", LVWNET_VERSION);
 }
 
 module_init(init_lvwnet);

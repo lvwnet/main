@@ -1459,19 +1459,21 @@ static bool ieee80211_tx(struct ieee80211_sub_if_data *sdata,
 
 	info->band = band;
 
-    /* lvwnet addons - begin */
-    lvwnet_send_skb_from_mac80211(skb);
-    /* lvwnet addons - end */
-
 	/* set up hw_queue value early */
 	if (!(info->flags & IEEE80211_TX_CTL_TX_OFFCHAN) ||
 	    !(local->hw.flags & IEEE80211_HW_QUEUE_CONTROL))
 		info->hw_queue =
 			sdata->vif.hw_queue[skb_get_queue_mapping(skb)];
 
-	if (!invoke_tx_handlers(&tx))
+	if (!invoke_tx_handlers(&tx)){
+	
+		/* lvwnet addons - begin */
+		lvwnet_send_skb_from_mac80211(skb);
+		/* lvwnet addons - end */
+
 		result = __ieee80211_tx(local, &tx.skbs, led_len,
 					tx.sta, txpending);
+	}
 
 	return result;
 }

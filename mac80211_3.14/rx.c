@@ -3444,7 +3444,9 @@ void ieee80211_rx(struct ieee80211_hw *hw, struct sk_buff *skb)
 
 	return;
  drop:
+	printk(KERN_ALERT "mac80211_lvwnet: frame dropped (RX)\n"); 
 	kfree_skb(skb);
+	
 }
 EXPORT_SYMBOL(ieee80211_rx);
 

@@ -2307,12 +2307,12 @@ static int __init init_mac80211_hwsim(void)
 		SET_IEEE80211_DEV(hw, data->dev);
 		addr[3] = i >> 8;
 		addr[4] = i;
-		/** begin mac param */
+		/** lvwnet begin mac param */
 		if (macaddr != NULL ) {
 			mac_strtoh(addr,macaddr);
 			printk(KERN_DEBUG "mac80211_hwsim: mac address was set [%pM]\n", addr); 
 		}
-		/** end mac param */
+		/** lvwnet end mac param */
 
 		memcpy(data->addresses[0].addr, addr, ETH_ALEN);
 		memcpy(data->addresses[1].addr, addr, ETH_ALEN);

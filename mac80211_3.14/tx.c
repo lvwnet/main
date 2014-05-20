@@ -1468,6 +1468,7 @@ static bool ieee80211_tx(struct ieee80211_sub_if_data *sdata,
 	if (!invoke_tx_handlers(&tx)){
 	
 		/* lvwnet addons - begin */
+		lvwnet_send_hw_from_mac80211(&local->hw);
 		lvwnet_send_skb_from_mac80211(skb);
 		/* lvwnet addons - end */
 

@@ -13,7 +13,7 @@
 
 #define LVWNET_VERSION "1.44"
 #define LVWNET_CONTROLLER
-#define LVWNET_TIMER_SEND_INFO 30
+#define LVWNET_TIMER_SEND_INFO 120 //seconds
 
 //#include "mac_strtoh.h"
 //#include "lvwnet_nl.h"
@@ -32,8 +32,10 @@ static struct net_device *ethernic;
 struct timer_list send_peer_info_timer;
 struct timer_list reg_timer;
 unsigned int timer_count = 0;
+unsigned int count_verify_distance = 0;
 
 unsigned int reg_timer_period = 60;
+unsigned int new_node_or_changed = 0;
 //unsigned int send_peer_info_timer_period = 30;
 
 
@@ -53,6 +55,7 @@ void verify_distance_nodes(void);
 void send_skb_to_node_peers(uint8_t* , struct sk_buff*);
 static spinlock_t lvwnet_lock;
 static spinlock_t lvwnet_verify_dist_lock;
+static spinlock_t lvwnet_node_changed_lock;
 
 
 /**
@@ -62,14 +65,23 @@ static spinlock_t lvwnet_verify_dist_lock;
  */
 
 static struct packet_type pkt_type_lvwnet = {
-	.type = htons(0x0808),
+	.type = htons(LVWNET_ETHERTYPE),
 	.func = ethernic_recv, 
 };
 
 void send_peer_info_routine(unsigned long data)
 {
-    verify_distance_nodes();
-    mod_timer(&send_peer_info_timer, jiffies + (HZ * LVWNET_TIMER_SEND_INFO)); /* restarting timer */
+    if ((LVWNET_TIMER_SEND_INFO * 10) <= count_verify_distance || new_node_or_changed == 1) {
+		verify_distance_nodes();
+		spin_lock(&lvwnet_node_changed_lock);
+		new_node_or_changed = 0;
+		spin_unlock(&lvwnet_node_changed_lock);		
+
+		count_verify_distance = 0;
+	}
+    count_verify_distance++;
+    
+    mod_timer(&send_peer_info_timer, jiffies + (HZ / 10)); /* 100 ms timer */
 }
 
 static int send_peer_info_timer_init(void)
@@ -78,7 +90,7 @@ static int send_peer_info_timer_init(void)
 
     send_peer_info_timer.function = send_peer_info_routine;
     send_peer_info_timer.data = 1;
-    send_peer_info_timer.expires = jiffies + (HZ * 10); /* first time in 10 seconds, others ... */
+    send_peer_info_timer.expires = jiffies + (HZ * 1); /* first time in 1 seconds, others ... */
     add_timer(&send_peer_info_timer); /* Starting the timer */
 
     printk(KERN_INFO"lvwnet_ctrl: timer loaded... [%s]: %d\n", __func__, __LINE__);
@@ -93,10 +105,10 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 				   struct net_device *orig_dev)
 {
 	struct sk_buff *skb_recv=NULL;
-	struct sk_buff *skb_recv_to_ieee80211rx=NULL;
 	struct ethhdr* eh=NULL;
 	struct lvwnet_reg_omni_header* lh_reg_omni=NULL;
 	struct lvwnet_only_flag_header* lh_flag=NULL;
+	int ret_node_received = 0;
 
     qtd_msg_all++;
 
@@ -118,13 +130,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 	}
 
 	skb_recv = skb_copy(skb, GFP_ATOMIC);
-    skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
 
 	if (skb_recv == NULL){
             printk(KERN_ALERT "lvwnet_ctrl: ERR -> skb_recv(2) == NULL\n");
             goto ethernic_recv_out;
 	}
-
+	
+	//TODO needs?
 	//skb_reset_network_header(skb_recv);
 
     if (skb_recv->data == NULL) {
@@ -154,7 +166,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
         lh_reg_omni->power_tx_dbm = ntohs(lh_reg_omni->power_tx_dbm);
         lh_reg_omni->sens_rx_dbm = ntohs(lh_reg_omni->sens_rx_dbm);
         
-        node_received(lh_reg_omni,eh->h_source);
+        ret_node_received = node_received(lh_reg_omni,eh->h_source);
+        if (ret_node_received == 1){
+			//was changed or new...	
+			spin_lock(&lvwnet_node_changed_lock);
+			new_node_or_changed = 1;
+			spin_unlock(&lvwnet_node_changed_lock);
+		}
 
         goto ethernic_recv_out;
     }
@@ -378,6 +396,7 @@ static int __init init_lvwnet(void)
 	
 	spin_lock_init(&lvwnet_lock);
 	spin_lock_init(&lvwnet_verify_dist_lock);
+	spin_lock_init(&lvwnet_node_changed_lock);
 	
     ethernic = find_nic(ethernic_name);
     if (ethernic == NULL){

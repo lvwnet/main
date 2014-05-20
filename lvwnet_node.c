@@ -109,10 +109,11 @@ extern void lvwnet_set_unloaded(void);
 
 void reg_timer_routine(unsigned long data)
 {
-    printk(KERN_DEBUG "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count++);
     if (timer_count >= TIMER_SEND_REG || pos_changed == 1) {
 		if (pos_changed) {
 			printk(KERN_DEBUG "lvwnet_node: pos changed. sending new reg msg. [%d]\n", timer_count++);
+		} else {
+			printk(KERN_DEBUG "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count++);
 		}
 		timer_count = 0;
 		pos_changed = 0;
@@ -566,10 +567,10 @@ void send_reg_to_controller(void)
 	
 	spin_lock(&lvwnet_send_reg_lock);
 	
-    _skb = alloc_skb(sizeof(struct ethhdr)+sizeof(struct lvwnet_reg_omni_header) + 1400, GFP_KERNEL);
+    _skb = alloc_skb(sizeof(struct ethhdr)+sizeof(struct lvwnet_reg_omni_header) + 100, GFP_KERNEL);
     skb_reserve(_skb, sizeof(struct ethhdr) + sizeof(struct lvwnet_reg_omni_header));
 
-    skb_reset_network_header(_skb);
+    //skb_reset_network_header(_skb);
 
     ret_lh = lvwnet_reg_omni_header_handler (_skb, x_pos, y_pos, z_pos, power_tx_dbm, sens_rx_dbm, channel);
     ethernic_send(_skb,ctrl_host_addr_h,ethernic);
@@ -588,8 +589,9 @@ static void rcv_hw(struct ieee80211_hw *__hw)
         printk(KERN_ALERT "lvwnet_node: received a NULL hw from mac80211 [%s].\n", __func__);
         goto failed_hw;
     }
-    hw = __hw;
-    printk(KERN_INFO "lvwnet_node: received hw from mac80211!\n");
+    //TODO needs a spin_lock here? 
+    if (hw == NULL)
+		hw = __hw;
     return;
  failed_hw:
     printk(KERN_ALERT "lvwnet_node: cannot receive hw from mac80211 [%s].\n", __func__);

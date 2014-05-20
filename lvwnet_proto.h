@@ -128,12 +128,15 @@ void list_unlock(void)
     spin_unlock(&lvwnet_list_lock);
 }
 
-/** manipulate node in a linked list - wrapper */
-void node_received(struct lvwnet_reg_omni_header* lh, const void* _node_mac)
+/** manipulate node in a linked list - wrapper 
+ *  return 0, node not changed
+ *  return 1, node changed or new node*/
+int node_received(struct lvwnet_reg_omni_header* lh, const void* _node_mac)
 {
     struct lvwnet_node_info* node_temp;
     struct lvwnet_node_info* node_found;
-
+	int node_changed = 0;
+	
     list_lock();
     if (lh == NULL || _node_mac == NULL) {
         printk(KERN_ALERT "lvwnet: received a NULL lvwnet_reg_omni_header or node mac. [%s], line %d\n", __func__, __LINE__);
@@ -157,8 +160,20 @@ void node_received(struct lvwnet_reg_omni_header* lh, const void* _node_mac)
 
     if ( node_found == NULL) {  //node not found...
         __node_add(node_temp);
+        node_changed = 1;
     } else {    //node found
         printk(KERN_INFO "lvwnet: node %pM need update. \n", node_found->node_mac);
+		
+		if ( node_found->pos_x != node_temp->pos_x || 
+			 node_found->pos_y != node_temp->pos_y ||
+			 node_found->pos_z != node_temp->pos_z ||
+			 node_found->power_tx_dbm != node_temp->power_tx_dbm ||
+			 node_found->sens_rx_dbm != node_temp->sens_rx_dbm ||
+			 node_found->channel != node_temp->channel ) {
+
+			node_changed = 1;
+		} 
+		
 
         node_found->pos_x          = node_temp->pos_x;
         node_found->pos_y          = node_temp->pos_y;
@@ -166,12 +181,13 @@ void node_received(struct lvwnet_reg_omni_header* lh, const void* _node_mac)
         node_found->power_tx_dbm = node_temp->power_tx_dbm;
         node_found->sens_rx_dbm  = node_temp->sens_rx_dbm;
         node_found->channel        = node_temp->channel;
+        /**TODO: calcular a distancia somente para o no que teve mudanca */
     }
 
 node_received_out:
 
     list_unlock();
-    return;
+    return node_changed;
 }
 
 

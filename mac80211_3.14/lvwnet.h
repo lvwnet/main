@@ -83,18 +83,17 @@ EXPORT_SYMBOL_GPL(lvwnet_set_unloaded);
 void lvwnet_send_hw_from_mac80211(struct ieee80211_hw *hw)
 {
     if (lvwnet_is_loaded()) {
-        printk(KERN_INFO "lvwnet: lvwnet is loaded... [%s].\n", __func__);
-
         if (lvwnet_ptr_hw == NULL) {
             printk(KERN_INFO "lvwnet: lvwnet_ptr_hw is NULL! [%s].\n", __func__);
         } else {
-            printk(KERN_INFO "lvwnet: lvwnet_ptr_hw is set. Sending hw. [%s].\n", __func__);
+            //printk(KERN_DEBUG "lvwnet: lvwnet_ptr_hw is set. Sending hw. [%s].\n", __func__);
             (lvwnet_ptr_hw)(hw);
         }
     } else {
         printk(KERN_INFO "lvwnet: lvwnet is unloaded. Nothing to do [%s].\n", __func__);
     }
 }
+EXPORT_SYMBOL_GPL(lvwnet_send_hw_from_mac80211);
 
 void lvwnet_send_skb_from_mac80211(struct sk_buff *skb)
 {
@@ -119,4 +118,5 @@ EXPORT_SYMBOL_GPL(lvwnet_send_skb_from_mac80211);
 #ifndef MAC80211_MAIN_C
 extern spinlock_t lvwgw_lock;
 extern void lvwnet_send_skb_from_mac80211(struct sk_buff *skb);
+extern void lvwnet_send_hw_from_mac80211(struct ieee80211_hw *hw);
 #endif

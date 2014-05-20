@@ -52,6 +52,8 @@ unsigned long nodes_distance(struct lvwnet_node_info*, struct lvwnet_node_info* 
 void verify_distance_nodes(void);
 void send_skb_to_node_peers(uint8_t* , struct sk_buff*);
 static spinlock_t lvwnet_lock;
+static spinlock_t lvwnet_verify_dist_lock;
+
 
 /**
  * =====================================
@@ -133,13 +135,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
     lh_flag = (struct lvwnet_only_flag_header *) skb_recv->data;
 
-    if (lh_flag->message_code == 0x06){ /** TODO colocar define */
+    if (lh_flag->message_code == LVWNET_CODE_PEER_INFO){ /** TODO colocar define */
         qtd_msg_peer_info++;
 		printk(KERN_ALERT "lvwnet_ctrl: received info frame (0x6) but is the controller... [%s]: %d\n", __func__, __LINE__);
         goto ethernic_recv_out;
     }
 
-    if (lh_flag->message_code == 0x02) {
+    if (lh_flag->message_code == LVWNET_CODE_REG_OMNI) {
         qtd_msg_reg_omni++;
         printk(KERN_INFO "lvwnet_ctrl: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
 
@@ -208,12 +210,12 @@ void verify_distance_nodes(void)
 	/** TODO colocar flag de se existiu alteracao */	
 
    if (nodes == NULL){
-        printk(KERN_ALERT "lvwnet_ctrl: no nodes yet... [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet_ctrl: no nodes yet... [%s:%d]\n", __func__, __LINE__);
         return;
     }
 
     if (nodes->next == NULL) {
-        printk(KERN_ALERT "lvwnet_ctrl: only one node yet... [%s]: %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet_ctrl: only one node yet... [%s:%d]\n", __func__, __LINE__);
         return;
     }  //only 1 node. not to compare...
 
@@ -223,7 +225,7 @@ void verify_distance_nodes(void)
         next_node = current_node->next;
         distance = nodes_distance(current_node, next_node);
 
-        printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
+        printk(KERN_DEBUG "lvwnet_ctrl: distance: %d %pM <-> %pM [%s:%d]\n",
                distance, current_node->node_mac, next_node->node_mac,  __func__, __LINE__);
 
 		/** TODO calcular delay inerente a distância - funcao linear */
@@ -231,7 +233,7 @@ void verify_distance_nodes(void)
 		if (current_node->channel == next_node->channel) {
 			freq = CHANNEL[current_node->channel];
 			lfs = get_lfs_dbm(freq,distance);
-			printk(KERN_INFO "lvwnet_ctrl: freq %d, lfs: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
+			printk(KERN_DEBUG "lvwnet_ctrl: freq %d, lfs: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
 					freq, lfs,current_node->power_tx_dbm, next_node->sens_rx_dbm  );
 
 			if ((current_node->power_tx_dbm - lfs) >= next_node->sens_rx_dbm){
@@ -257,10 +259,10 @@ void verify_distance_nodes(void)
         while (next_node->next != NULL){
             next_node = next_node->next;
             if (memcmp(next_node->node_mac,current_node->node_mac,ETH_ALEN) == 0) { //really need?
-                printk(KERN_ALERT "lvwnet_ctrl: identical nodes in list? BUG!!! o.O [%s]: %d\n", __func__, __LINE__);
+                printk(KERN_DEBUG "lvwnet_ctrl: identical nodes in list? BUG!!! o.O [%s:%d]\n", __func__, __LINE__);
             }
             distance = nodes_distance(current_node, next_node);
-            printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
+            printk(KERN_DEBUG "lvwnet_ctrl: distance: %d %pM <-> %pM [%s:%d]\n",
 					distance, current_node->node_mac, next_node->node_mac, __func__, __LINE__);
 			/** TODO: criar uma funcaozinha pra isso... */
 			if (current_node->channel == next_node->channel) {
@@ -303,13 +305,13 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 
 
    if (nodes == NULL){
-        printk(KERN_ALERT "lvwnet_ctrl: no nodes yet... [%s]: %d\n", 
+        printk(KERN_DEBUG "lvwnet_ctrl: no nodes yet... [%s:%d]\n", 
 			__func__, __LINE__);
         return;
     }
 
     if (nodes->next == NULL) {
-        printk(KERN_ALERT "lvwnet_ctrl: only one node yet... [%s:%d]\n", 
+        printk(KERN_DEBUG "lvwnet_ctrl: only one node yet... [%s:%d]\n", 
 			__func__, __LINE__);
         return;
     }  //only 1 node. not to compare...
@@ -329,14 +331,10 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 			continue; //the node is the same.
 		}
 		distance = nodes_distance(node1, node2);
-		//printk(KERN_INFO "lvwnet_ctrl: distance: %d %pM <-> %pM [%s]:%d\n",
-		//		distance, node1->node_mac, node2->node_mac, __func__, __LINE__);
 		if (node1->channel == node2->channel) {
 			freq = CHANNEL[node2->channel];
 			lfs = get_lfs_dbm(freq,distance);
 			if ((node1->power_tx_dbm - lfs) >= node2->sens_rx_dbm){
-				//printk(KERN_ALERT "lvwnet_ctrl: broker, sending skb from %pM to %pM [%s:%d]\n", 
-				//	node1->node_mac, node2->node_mac, __func__, __LINE__);
 				ethernic_send(skb,node2->node_mac,ethernic); //send skb to node
 			} 
 		} else {
@@ -346,8 +344,6 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 		node2 = node2->next;
 	}
 }
-
-
 
 /** return the distance between two nodes (integer) */
 unsigned long nodes_distance(struct lvwnet_node_info* node1, struct lvwnet_node_info* node2)
@@ -379,7 +375,10 @@ static int __init init_lvwnet(void)
     printk(KERN_INFO "lvwnet_ctrl: Starting module %s now.\n", LVWNET_VERSION);
     if (!__params_verify())
         return -EINVAL; //invalid params
-
+	
+	spin_lock_init(&lvwnet_lock);
+	spin_lock_init(&lvwnet_verify_dist_lock);
+	
     ethernic = find_nic(ethernic_name);
     if (ethernic == NULL){
         printk(KERN_ALERT "lvwnet_ctrl: ethernet interface [%s] not found.\n", ethernic_name);
@@ -418,4 +417,3 @@ module_exit(exit_lvwnet);
 
 MODULE_DESCRIPTION("LVWNet - Linux Virtual Wireless Network Module - Controller");
 MODULE_LICENSE("GPL");
-

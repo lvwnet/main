@@ -73,7 +73,8 @@ void verify_distance_nodes(void);
 void send_data_to_peers(struct sk_buff*);
 
 static spinlock_t lvwnet_lock;
-spinlock_t lvwnet_recv_lock;
+static spinlock_t lvwnet_recv_lock;
+static spinlock_t lvwnet_send_reg_lock;
 
 int ethernic_recv_data (struct sk_buff*, struct net_device* , struct packet_type*, struct net_device*);
 
@@ -87,14 +88,14 @@ int ethernic_recv_data (struct sk_buff*, struct net_device* , struct packet_type
 unsigned int DELAYED_SEND_COUNTER = 0;
 
 static struct packet_type pkt_type_lvwnet = {
-	.type = htons(0x0808),
+	.type = htons(LVWNET_ETHERTYPE),
 	.func = ethernic_recv, 
 };
 
-static struct packet_type pkt_type_lvwnet_data = {
-	.type = htons(0x0809),
-	.func = ethernic_recv_data, 
-};
+//static struct packet_type pkt_type_lvwnet_data = {
+//	.type = htons(0x0809),
+//	.func = ethernic_recv_data, 
+//};
 
 
 //static spinlock_t lvwnet_lock;
@@ -108,9 +109,17 @@ extern void lvwnet_set_unloaded(void);
 
 void reg_timer_routine(unsigned long data)
 {
-    printk(KERN_INFO "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count++);
-    send_reg_to_controller();
-    mod_timer(&reg_timer, jiffies + (HZ * TIMER_SEND_REG_CTRL)); /* restarting timer */
+    printk(KERN_DEBUG "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count++);
+    if (timer_count >= TIMER_SEND_REG || pos_changed == 1) {
+		if (pos_changed) {
+			printk(KERN_DEBUG "lvwnet_node: pos changed. sending new reg msg. [%d]\n", timer_count++);
+		}
+		timer_count = 0;
+		pos_changed = 0;
+		
+		send_reg_to_controller();
+	}
+    mod_timer(&reg_timer, jiffies + (HZ * 1)); /* restarting timer */
 }
 
 
@@ -120,7 +129,7 @@ static int reg_timer_init(void)
 
     reg_timer.function = reg_timer_routine;
     reg_timer.data = 1;
-    reg_timer.expires = jiffies + (HZ * 10); /* first time in 1 second, others ... */
+    reg_timer.expires = jiffies + (HZ * 1); /* first time in 1 second, others ... */
     add_timer(&reg_timer); /* Starting the timer */
 
     printk(KERN_INFO "lvwnet_node: timer loaded... [%s]: %d\n", __func__, __LINE__);
@@ -197,13 +206,13 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 				   struct net_device *orig_dev)
 {
 	struct sk_buff *skb_recv=NULL;
-	struct sk_buff *skb_recv_to_ieee80211rx=NULL;
+	//struct sk_buff *skb_recv_to_ieee80211rx=NULL;
 	//struct sk_buff *skb_recv_1=NULL;
 	//struct sk_buff *newskb=NULL;
 	//struct sk_buff *_skb=NULL;
 	//struct sk_buff *skb_recv_wlannic=NULL;
 	struct ethhdr* eh=NULL;
-	static struct net_device *wifi_interf = NULL;
+	//static struct net_device *wifi_interf = NULL;
 	//struct lvwnet_reg_omni_header* lh_reg_omni=NULL;
 	struct lvwnet_peers_info_header* lh_peers=NULL;
 	struct lvwnet_only_flag_header* lh_flag=NULL;
@@ -223,8 +232,8 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
     qtd_msg_all++;
     //uint8_t radiotap[26];
     
-	
-	spin_lock(&lvwnet_lock);
+	/** lock... have or not have... */
+	//spin_lock(&lvwnet_lock);
 
 
 	if( skb_mac_header_was_set(skb) ) {
@@ -285,7 +294,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 	/*************************************************************************/
     if (lh_flag->message_code == LVWNET_CODE_REG_OMNI) {
         qtd_msg_reg_omni++;
-        printk(KERN_INFO "lvwnet_node: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
+        printk(KERN_ALERT "lvwnet_node: received a registration frame (0x2) from %pM (Register omni peer).\n", eh->h_source);
 		printk(KERN_ALERT "lvwnet_node: received registration frame (0x2) but not controller... [%s]: %d\n", __func__, __LINE__);
 		goto ethernic_recv_out;
     }
@@ -307,49 +316,31 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
         if (hw == NULL) {
             printk(KERN_ALERT "lvwnet_node: hw is NULL. Wireless NIC is present? (maybe not SoftMAC compatible...) [%s]\n", __func__);
         } else {
-            if ( skb == NULL) {
-                printk(KERN_ALERT "lvwnet_node: skb is NULL. [%s:%d]\n", __func__, __LINE__);
-            } else {
-				//skb->dev = wifi_interf;
+			//skb->dev = wifi_interf;
+	
+			//skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
 
-				skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
+			newdata = skb_pull(skb_recv, 1);
+			skb_reset_network_header(skb_recv);
 
-				newdata = skb_pull(skb_recv_to_ieee80211rx, 1);
-				skb_reset_network_header(skb_recv_to_ieee80211rx);
+			len_data = skb_recv->len;
 
-				len_data = skb_recv_to_ieee80211rx->len;
+			if (skb_recv->data_len != 0) {
+				printk(KERN_DEBUG "lvwnet_node: data_len != 0. Non-linear skb here... [%s:%d]\n", __func__, __LINE__);
+			}
+			if (skb_is_nonlinear(skb_recv)) {
+				printk(KERN_DEBUG "lvwnet_node: skb_is_nonlinear returned true. Non-linear skb here... [%s:%d]\n", __func__, __LINE__);
+			}
+			if (skb_recv->data == NULL) {
+				printk(KERN_DEBUG "lvwnet_node: skb_recv_to_ieee80211rx->data == NULL. bad... [%s:%d]\n", __func__, __LINE__);
+				goto ethernic_recv_out;
+			}
 
-				if (skb_recv_to_ieee80211rx->data_len != 0) {
-					printk(KERN_ALERT "lvwnet_node: data_len != 0. Non-linear skb here... [%s:%d]\n", __func__, __LINE__);
-				}
-				if (skb_is_nonlinear(skb_recv_to_ieee80211rx)) {
-					printk(KERN_ALERT "lvwnet_node: skb_is_nonlinear returned true. Non-linear skb here... [%s:%d]\n", __func__, __LINE__);
-				}
-				if (skb_recv_to_ieee80211rx->data == NULL) {
-					printk(KERN_ALERT "lvwnet_node: skb_recv_to_ieee80211rx->data == NULL. bad... [%s:%d]\n", __func__, __LINE__);
-					goto ethernic_recv_out;
-				}
-
-				if (skb_recv_to_ieee80211rx != NULL){
-					if (skb_recv_to_ieee80211rx->head != NULL){
-						//print_hex_dump(KERN_DEBUG, "0X0808 91(mac_head): ", DUMP_PREFIX_NONE,
-						//				16, 1, (skb_recv_to_ieee80211rx->head + skb_recv_to_ieee80211rx->mac_header), 14, 0);
-					}
-				}
-				//printk(KERN_DEBUG ".................................................\n");
-
-				if (skb_recv_to_ieee80211rx != NULL){
-					if (skb_recv_to_ieee80211rx->data != NULL){
-						//print_hex_dump(KERN_DEBUG, "0x0808 (data): ", DUMP_PREFIX_NONE,
-						//			16, 1, skb_recv_to_ieee80211rx->data, len_data, 0);
-					}
-				}
-				//printk(KERN_DEBUG ".................................................\n");
-				//skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
-				printk(KERN_DEBUG "lvwnet_node: csum ->[%d, %d] \n", skb_recv_to_ieee80211rx->csum, skb_checksum_complete(skb_recv_to_ieee80211rx));
-				//ieee80211_rx_irqsafe(hw, skb_recv_to_ieee80211rx);
-				ieee80211_rx(hw, skb_recv_to_ieee80211rx);
-            } 
+			//skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
+			//printk(KERN_DEBUG "lvwnet_node: csum ->[%d, %d] \n", skb_recv->csum, skb_checksum_complete(skb_recv));
+			ieee80211_rx_irqsafe(hw, skb_recv);
+			//ieee80211_rx(hw, skb_recv);
+		 
         } 
         goto ethernic_recv_out;
     } else {
@@ -358,7 +349,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
 ethernic_recv_out:
 	dev_kfree_skb (skb);
-	spin_unlock(&lvwnet_lock);
+	//spin_unlock(&lvwnet_lock);
 
 	//dev_kfree_skb (skb_recv_to_ieee80211rx);
 
@@ -380,7 +371,7 @@ int ethernic_recv_data (struct sk_buff *skb, struct net_device *dev, struct pack
 	//struct sk_buff *_skb=NULL;
 	//struct sk_buff *skb_recv_wlannic=NULL;
 	struct ethhdr* eh=NULL;
-	static struct net_device *wifi_interf = NULL;
+	//static struct net_device *wifi_interf = NULL;
 	//struct lvwnet_reg_omni_header* lh_reg_omni=NULL;
 	//struct lvwnet_peers_info_header* lh_peers=NULL;
 	//struct lvwnet_only_flag_header* lh_flag=NULL;
@@ -437,13 +428,14 @@ int ethernic_recv_data (struct sk_buff *skb, struct net_device *dev, struct pack
 	qtd_msg_data++;
 	
 
-	if (wifi_interf == NULL){
+	/*
+	 * if (wifi_interf == NULL){
 		wifi_interf = find_nic("wlan0");
 		if (wifi_interf == NULL) {
 			printk(KERN_ALERT "lvwnet_node: wireless interface (%s) not found! [%s:%d]\n", "wlan0", __func__, __LINE__);
 			goto ethernic_recv_out;
 		}
-	}
+	}*/
 
 	if (hw == NULL) {
 		printk(KERN_ALERT "lvwnet_node: hw is NULL. Wireless NIC is present? (maybe not SoftMAC compatible...) [%s]\n", __func__);
@@ -451,7 +443,7 @@ int ethernic_recv_data (struct sk_buff *skb, struct net_device *dev, struct pack
 		if ( skb == NULL) {
 			printk(KERN_ALERT "lvwnet_node: skb is NULL. [%s:%d]\n", __func__, __LINE__);
 		} else {
-			skb->dev = wifi_interf;
+			//skb->dev = wifi_interf;
 
 			skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
 
@@ -537,7 +529,7 @@ void send_data_to_peers(struct sk_buff* skb)
     //datahdr->skb_data = skb_copy(_data,GFP_KERNEL);
 
     if (peers == NULL) {
-        printk(KERN_INFO "lvwnet_node: nobody to send data... \n");
+        printk(KERN_DEBUG "lvwnet_node: nobody to send data... \n");
 		goto err_out;
     } else {
         temp_peer = peers;
@@ -571,7 +563,9 @@ void send_reg_to_controller(void)
 {
     struct sk_buff* _skb;
     int ret_lh = 0;
-
+	
+	spin_lock(&lvwnet_send_reg_lock);
+	
     _skb = alloc_skb(sizeof(struct ethhdr)+sizeof(struct lvwnet_reg_omni_header) + 1400, GFP_KERNEL);
     skb_reserve(_skb, sizeof(struct ethhdr) + sizeof(struct lvwnet_reg_omni_header));
 
@@ -579,6 +573,8 @@ void send_reg_to_controller(void)
 
     ret_lh = lvwnet_reg_omni_header_handler (_skb, x_pos, y_pos, z_pos, power_tx_dbm, sens_rx_dbm, channel);
     ethernic_send(_skb,ctrl_host_addr_h,ethernic);
+    
+	spin_unlock(&lvwnet_send_reg_lock);
     //ethernic_send_msg_type(_skb,ctrl_host_addr_h,ethernic,0x02);
 }
 
@@ -614,7 +610,10 @@ static int __init init_lvwnet(void)
         printk(KERN_ALERT "lvwnet_node: ethernet interface [%s] not found.\n", ethernic_name);
         return -EINVAL;
     }
+    
+	spin_lock_init(&lvwnet_lock);
 	spin_lock_init(&lvwnet_recv_lock);
+	spin_lock_init(&lvwnet_send_reg_lock);
 	
     //Setting pointers to get hw from modified mac80211
     __init_sysfs();
@@ -628,7 +627,7 @@ static int __init init_lvwnet(void)
 	lvwnet_set_loaded();
 
 	mac_strtoh(ctrl_host_addr_h, ctrl_host_addr);
-	printk(KERN_INFO "lvwnet_node: host set as node, and controller set is: [%pM]\n", ctrl_host_addr_h);
+	printk(KERN_INFO "lvwnet_node: host set as node, and controller is: [%pM]\n", ctrl_host_addr_h);
 
 
     printk(KERN_INFO "lvwnet_node: Registering ethertype 0x0808[lvwnet].\n");

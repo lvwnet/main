@@ -195,6 +195,42 @@ static ssize_t sysfs_qtd_reg_omni_msg(struct kobject *kobj, struct kobj_attribut
     return sprintf(buf,"%ld\n", qtd_msg_reg_omni);
 }
 
+static ssize_t sysfs_x_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf,"%d\n", x_pos);
+}
+
+static ssize_t sysfs_x_pos_store(struct kobject *kobj, struct kobj_attribute *attr, 
+	const char *buf, size_t count)
+{
+    sscanf(buf,"%d", &x_pos);
+    return count;
+}
+
+static ssize_t sysfs_y_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf,"%d\n", y_pos);
+} 
+
+static ssize_t sysfs_y_pos_store(struct kobject *kobj, struct kobj_attribute *attr, 
+	const char *buf, size_t count)
+{
+    sscanf(buf,"%d", &y_pos);
+    return count;
+}
+
+static ssize_t sysfs_z_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+    return sprintf(buf,"%d\n", z_pos);
+}
+
+static ssize_t sysfs_z_pos_store(struct kobject *kobj, struct kobj_attribute *attr, 
+	const char *buf, size_t count)
+{
+    sscanf(buf,"%d", &z_pos);
+	pos_changed = 1;
+    return count;
+}
 
 static struct kobj_attribute fw_attribute = __ATTR(fw_version, 0666, sysfs_hw_show, NULL);
 static struct kobj_attribute perm_addr_attribute = __ATTR(perm_addr, 0666, sysfs_perm_addr, NULL);
@@ -209,9 +245,12 @@ static struct kobj_attribute qtd_data_msg = __ATTR(qtd_data_msg, 0666, sysfs_qtd
 static struct kobj_attribute qtd_all_msg = __ATTR(qtd_all_msg, 0666, sysfs_qtd_all_msg, NULL);
 static struct kobj_attribute qtd_info_msg = __ATTR(qtd_info_msg, 0666, sysfs_qtd_info_msg, NULL);
 static struct kobj_attribute qtd_reg_omni_msg = __ATTR(qtd_reg_omni_msg, 0666, sysfs_qtd_reg_omni_msg, NULL);
+static struct kobj_attribute x_pos_kobj = __ATTR(x_pos, 0666, sysfs_x_pos_show, sysfs_x_pos_store);
+static struct kobj_attribute y_pos_kobj = __ATTR(y_pos, 0666, sysfs_y_pos_show, sysfs_y_pos_store);
+static struct kobj_attribute z_pos_kobj = __ATTR(z_pos, 0666, sysfs_z_pos_show, sysfs_z_pos_store);
 
 
-/**
+/** 
  * TODO: colocar sysfs para:
  * qtd de peers
  * qtd de nodes
@@ -236,6 +275,9 @@ static struct attribute *attrs[] = {
     &qtd_data_msg.attr,
     &qtd_info_msg.attr,
     &qtd_reg_omni_msg.attr,
+    &x_pos_kobj.attr,
+    &y_pos_kobj.attr,
+    &z_pos_kobj.attr,
     NULL,
 };
 

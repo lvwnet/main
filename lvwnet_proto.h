@@ -7,15 +7,18 @@
 #define LVWNET_CODE_REG_OMNI     0x02
 #define LVWNET_CODE_DATA         0x07
 #define LVWNET_PEER_UNREACHABLE -256
+#define LVWNET_ETHERTYPE         0x0808
 
 /** Time to send registration to controller from peers */
-#define TIMER_SEND_REG 	         60 
+#define TIMER_SEND_REG 	         120 
 /** Time to send registration to controller from peers */
 #define TIMER_SEND_INFO_NODES    60 
-#define TIMER_SEND_REG_CTRL      30 
+//#define TIMER_SEND_REG_CTRL      30 
 
 spinlock_t  lvwnet_list_lock;
 int lock_inited = 0;
+
+int pos_changed = 0;
 
 long qtd_msg_peer_info = 0;
 long qtd_msg_reg_omni  = 0;

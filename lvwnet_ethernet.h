@@ -32,10 +32,10 @@ static struct net_device* find_nic(char *ethname){
 int ethernic_send (struct sk_buff *skb, uint8_t *dest_mac, struct net_device* _dev)
 {
     int ret=0;
-    //int ret_eh = 0;
-	uint8_t * new_skb_data;
+    int ret_eh = 0;
+	//uint8_t * new_skb_data;
 	struct sk_buff* newskb = skb;
-	static uint8_t protocol_code[] = "\x08\x08";
+	//static uint8_t protocol_code[] = "\x08\x08";
 	//uint8_t msg_type = 0x07;
 
 	if (lvwnet_send_lock_flag == 0) {
@@ -69,14 +69,14 @@ int ethernic_send (struct sk_buff *skb, uint8_t *dest_mac, struct net_device* _d
             newskb = skb_copy_expand (skb, ETH_HLEN+8, 0, GFP_ATOMIC); /**TODO: why +8??? */
         }
         
-        new_skb_data = skb_push(newskb, ETH_HLEN);
+        //new_skb_data = skb_push(newskb, ETH_HLEN);
 
-        memcpy(new_skb_data, dest_mac, ETH_ALEN);
-        memcpy(new_skb_data+ETH_ALEN, _dev->dev_addr,  ETH_ALEN);
-        memcpy(new_skb_data+(2*ETH_ALEN), protocol_code, 2);
+        //memcpy(new_skb_data, dest_mac, ETH_ALEN);
+        //memcpy(new_skb_data+ETH_ALEN, _dev->dev_addr,  ETH_ALEN);
+        //memcpy(new_skb_data+(2*ETH_ALEN), protocol_code, 2);
         //memcpy(new_skb_data+(2*ETH_ALEN)+2, &msg_type, 1);
 
-        //ret_eh = eth_header(newskb, _dev, 0x0808, dest_mac,_dev->dev_addr,ETH_HLEN);
+        ret_eh = eth_header(newskb, _dev, 0x0808, dest_mac,_dev->dev_addr,ETH_HLEN);
         //newskb->dev = _dev;
 	
 		//printk(KERN_INFO "lvwnet: 3 head [%d], data [%d], tail [%d], end [%d], %s:%d\n", 

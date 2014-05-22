@@ -162,7 +162,7 @@ int node_received(struct lvwnet_reg_omni_header* lh, const void* _node_mac)
         __node_add(node_temp);
         node_changed = 1;
     } else {    //node found
-        printk(KERN_INFO "lvwnet: node %pM need update. \n", node_found->node_mac);
+        printk(KERN_DEBUG "lvwnet: node %pM need update. \n", node_found->node_mac);
 		
 		if ( node_found->pos_x != node_temp->pos_x || 
 			 node_found->pos_y != node_temp->pos_y ||
@@ -219,7 +219,7 @@ void peer_received(struct lvwnet_peers_info_header* lh)
 
     if ( peer_found == NULL) {
         if (peer_temp->power_rx_dbm <= LVWNET_PEER_UNREACHABLE) {
-            printk(KERN_INFO "lvwnet: peer %pM is unreachable and not in list. Not to do. \n", peer_temp->peer_mac);
+            printk(KERN_DEBUG "lvwnet: peer %pM is unreachable and not in list. Not to do. \n", peer_temp->peer_mac);
             if (find_peer_by_mac(lh->peer_mac, peers_unreachables) == NULL) {
                 __peer_unreachable_add(peer_temp);
             }
@@ -231,14 +231,14 @@ void peer_received(struct lvwnet_peers_info_header* lh)
         __peer_add(peer_temp);
     } else {
         if (peer_temp->power_rx_dbm <= LVWNET_PEER_UNREACHABLE){
-            printk(KERN_INFO "lvwnet: peer %pM need be removed. \n", peer_found->peer_mac);
+            printk(KERN_DEBUG "lvwnet: peer %pM need be removed. \n", peer_found->peer_mac);
             __peer_remove(peer_found);
             if (find_peer_by_mac(lh->peer_mac, peers_unreachables) == NULL){
                 __peer_unreachable_add(peer_temp);
             }
             goto peer_add_out;
         } else { //nao precisa desse else...
-            printk(KERN_INFO "lvwnet: peer %pM need update. \n", peer_found->peer_mac);
+            printk(KERN_DEBUG "lvwnet: peer %pM need update. \n", peer_found->peer_mac);
         }
 
 		if (find_peer_by_mac(lh->peer_mac, peers_unreachables) != NULL) {
@@ -308,7 +308,7 @@ void __peer_add(struct lvwnet_peer_info* _peer)
     }
     if (peers == NULL) {//first time
         peers = _peer;
-        printk(KERN_INFO "lvwnet: first peer. [%s:%d]\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: first peer. [%s:%d]\n", __func__, __LINE__);
     } else {
         temp_peer = peers;
         //printk(KERN_ALERT "lvwnet: return 3\n");
@@ -329,14 +329,14 @@ void __peer_remove(struct lvwnet_peer_info* _peer)
 {
     if (_peer->prev == NULL && _peer->next == NULL)   //last of list
     {
-        printk(KERN_ALERT "lvwnet: last peer of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG"lvwnet: last peer of list. [%s], line %d\n", __func__, __LINE__);
         peers = NULL;
         return;
     }
 
     if (_peer->prev == NULL)   //head of list
     {
-        printk(KERN_ALERT "lvwnet: peer is the head of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: peer is the head of list. [%s], line %d\n", __func__, __LINE__);
 
         peers = peers->next;
         peers->prev = NULL;
@@ -345,7 +345,7 @@ void __peer_remove(struct lvwnet_peer_info* _peer)
 
     if (_peer->next == NULL)   //tail of list
     {
-        printk(KERN_ALERT "lvwnet: peer is the tail of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: peer is the tail of list. [%s], line %d\n", __func__, __LINE__);
         _peer->prev->next = NULL;
         return;
     }
@@ -370,7 +370,7 @@ void __peer_unreachable_add(struct lvwnet_peer_info* _peer)
     if (peers_unreachables == NULL)   //first time...
     {
         peers_unreachables = _peer;
-        printk(KERN_INFO "lvwnet: first peer. [%s:%d]\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: first peer. [%s:%d]\n", __func__, __LINE__);
     }
     else
     {
@@ -394,14 +394,14 @@ void __peer_unreachable_remove(struct lvwnet_peer_info* _peer)
 {
     if (_peer->prev == NULL && _peer->next == NULL)   //last of list
     {
-        printk(KERN_ALERT "lvwnet: last peer of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: last peer of list. [%s], line %d\n", __func__, __LINE__);
         peers_unreachables = NULL;
         return;
     }
 
     if (_peer->prev == NULL)   //head of list
     {
-        printk(KERN_ALERT "lvwnet: peer is the head of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: peer is the head of list. [%s], line %d\n", __func__, __LINE__);
 
         peers_unreachables = peers_unreachables->next;
         peers_unreachables->prev = NULL;
@@ -410,7 +410,7 @@ void __peer_unreachable_remove(struct lvwnet_peer_info* _peer)
 
     if (_peer->next == NULL)   //tail of list
     {
-        printk(KERN_ALERT "lvwnet: peer is the tail of list. [%s], line %d\n", __func__, __LINE__);
+        printk(KERN_DEBUG "lvwnet: peer is the tail of list. [%s], line %d\n", __func__, __LINE__);
         _peer->prev->next = NULL;
         return;
     }

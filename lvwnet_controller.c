@@ -251,8 +251,10 @@ void verify_distance_nodes(void)
 		if (current_node->channel == next_node->channel) {
 			freq = CHANNEL[current_node->channel];
 			lfs = get_lfs_dbm(freq,distance);
-			printk(KERN_DEBUG "lvwnet_ctrl: freq %d, lfs: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
-					freq, lfs,current_node->power_tx_dbm, next_node->sens_rx_dbm  );
+			printk(KERN_DEBUG "lvwnet_ctrl: freq %d, lfs: %d, dist: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
+					freq, lfs, distance, current_node->power_tx_dbm, next_node->sens_rx_dbm  );
+			printk(KERN_DEBUG "lvwnet_ctrl: current_node: %pM, next_node: %pM\n ",
+					current_node->node_mac, next_node->node_mac  );
 
 			if ((current_node->power_tx_dbm - lfs) >= next_node->sens_rx_dbm){
 				/** TODO: verificar depois se eh isso mesmo (a ordem) */
@@ -286,6 +288,10 @@ void verify_distance_nodes(void)
 			if (current_node->channel == next_node->channel) {
 				freq = CHANNEL[current_node->channel];
 				lfs = get_lfs_dbm(freq,distance);
+				printk(KERN_DEBUG "lvwnet_ctrl: freq %d, lfs: %d, dist: %d, current_node->power_tx_dbm: %d, next_node->sens_rx_dbm: %d\n ",
+						freq, lfs, distance, current_node->power_tx_dbm, next_node->sens_rx_dbm  );
+				printk(KERN_DEBUG "lvwnet_ctrl: current_node: %pM, next_node: %pM\n ",
+						current_node->node_mac, next_node->node_mac  );
 				if ((current_node->power_tx_dbm - lfs) >= next_node->sens_rx_dbm){
 					/** TODO: verificar depois se eh isso mesmo (a ordem) */
 					send_info_to_node(current_node,next_node,(current_node->power_tx_dbm - lfs),1);
@@ -353,7 +359,7 @@ void send_skb_to_node_peers(uint8_t* mac, struct sk_buff* skb)
 			freq = CHANNEL[node2->channel];
 			lfs = get_lfs_dbm(freq,distance);
 			if ((node1->power_tx_dbm - lfs) >= node2->sens_rx_dbm){
-				ethernic_send(skb,node2->node_mac,ethernic); //send skb to node
+				ethernic_send(skb_copy(skb,GFP_ATOMIC),node2->node_mac,ethernic); //send skb to node
 			} 
 		} else {
 			node2 = node2->next;

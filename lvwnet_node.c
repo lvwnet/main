@@ -109,17 +109,18 @@ extern void lvwnet_set_unloaded(void);
 
 void reg_timer_routine(unsigned long data)
 {
-    if (timer_count >= TIMER_SEND_REG || pos_changed == 1) {
+    if ((timer_count >= TIMER_SEND_REG) || pos_changed == 1) {
 		if (pos_changed) {
-			printk(KERN_DEBUG "lvwnet_node: pos changed. sending new reg msg. [%d]\n", timer_count++);
+			printk(KERN_DEBUG "lvwnet_node: pos changed. sending new reg msg. [%d]\n", timer_count);
 		} else {
-			printk(KERN_DEBUG "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count++);
+			printk(KERN_DEBUG "lvwnet_node: sending periodical register to controller... [%d]\n", timer_count);
 		}
 		timer_count = 0;
 		pos_changed = 0;
 		
 		send_reg_to_controller();
 	}
+	timer_count++;
     mod_timer(&reg_timer, jiffies + (HZ * 1)); /* restarting timer */
 }
 
@@ -272,7 +273,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 	/*************************************************************************/
     if (lh_flag->message_code == LVWNET_CODE_PEER_INFO){
         qtd_msg_peer_info++;
-        printk(KERN_INFO "lvwnet_node: received a control frame (0x6) from %pM (Peers information).\n", eh->h_source);
+        printk(KERN_DEBUG "lvwnet_node: received a control frame (0x6) from %pM (Peers information).\n", eh->h_source);
         if (is_controller == 1){
             printk(KERN_ALERT "lvwnet_node: received info frame (0x6) but is the controller... [%s]: %d\n", __func__, __LINE__);
             goto ethernic_recv_out;

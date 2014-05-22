@@ -1516,6 +1516,9 @@ void ieee80211_xmit(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
 	struct ieee80211_local *local = sdata->local;
 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *) skb->data;
+	/** lvwnet addons begin */
+	struct sk_buff *skb_to_send=NULL;
+	/** lvwnet addons end */
 	int headroom;
 	bool may_encrypt;
 
@@ -1538,8 +1541,17 @@ void ieee80211_xmit(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
 	if (ieee80211_vif_is_mesh(&sdata->vif)) {
 		if (ieee80211_is_data(hdr->frame_control) &&
 		    is_unicast_ether_addr(hdr->addr1)) {
-			if (mesh_nexthop_resolve(sdata, skb))
+				/* lvwnet addons - begin */
+				skb_to_send = skb_copy(skb,GFP_ATOMIC);
+				/* lvwnet addons - end */
+			if (mesh_nexthop_resolve(sdata, skb)) {	
+				/* lvwnet addons - begin */
+				/**TODO: testes... precisa? */
+				lvwnet_send_skb_from_mac80211(skb_to_send);
+				/* lvwnet addons - end */
+
 				return; /* skb queued: don't free */
+			}
 		} else {
 			ieee80211_mps_set_frame_flags(sdata, NULL, hdr);
 		}
@@ -1774,6 +1786,9 @@ fail_rcu:
 	rcu_read_unlock();
 fail:
 	dev_kfree_skb(skb);
+	/** lvwnet begin */
+	printk(KERN_ALERT "mac80211_lvwnet: dropped. 1..\n");
+	/** lvwnet end */
 	return NETDEV_TX_OK; /* meaning, we dealt with the skb */
 }
 
@@ -2282,6 +2297,10 @@ static bool ieee80211_tx_pending_skb(struct ieee80211_local *local,
 				      chanctx_conf->def.chan->band);
 	} else {
 		struct sk_buff_head skbs;
+
+		/* lvwnet addons - begin */
+		lvwnet_send_skb_from_mac80211(skb);
+		/* lvwnet addons - end */
 
 		__skb_queue_head_init(&skbs);
 		__skb_queue_tail(&skbs, skb);

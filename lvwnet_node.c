@@ -323,6 +323,7 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 			//skb_recv_to_ieee80211rx = skb_copy(skb, GFP_ATOMIC);
 
 			newdata = skb_pull(skb_recv, 1);
+			//skb_trim(skb_recv, 2);
 			skb_reset_network_header(skb_recv);
 
 			len_data = skb_recv->len;
@@ -540,7 +541,8 @@ void send_data_to_peers(struct sk_buff* skb)
 
         //printk(KERN_INFO "lvwnet_node: sending data to %pM \n", temp_peer->peer_mac);
 		//ethernic_send(_skb_to_send,temp_peer->peer_mac,ethernic);
-		ethernic_send_data(_skb_to_send,temp_peer->peer_mac,ethernic);
+		//ethernic_send_data(_skb_to_send,temp_peer->peer_mac,ethernic);
+		ethernic_send_msg_type(_skb_to_send,temp_peer->peer_mac,ethernic, LVWNET_CODE_DATA);
 
         while (temp_peer->next != NULL){
             temp_peer = temp_peer->next;

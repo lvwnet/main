@@ -33,6 +33,7 @@
 #include "mac80211_hwsim.h"
 /** lvwnet begin mac param */
 #include "mac_strtoh.h"
+extern void lvwnet_send_skb_from_mac80211(struct sk_buff *skb);
 /** lvwnet end mac param */
 
 
@@ -989,6 +990,14 @@ static bool mac80211_hwsim_tx_frame_no_nl(struct ieee80211_hw *hw,
 	else
 		now = mac80211_hwsim_get_tsf_raw();
 
+	/** lvwnet begin */
+	//memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
+	//ieee80211_rx_irqsafe(data2->hw, nskb);
+	lvwnet_send_skb_from_mac80211(skb_copy(skb, GFP_ATOMIC));
+	/** lvwnet end */
+
+	return true;
+	
 	/* Copy skb to all enabled radios that are on the current frequency */
 	spin_lock(&hwsim_radio_lock);
 	list_for_each_entry(data2, &hwsim_radios, list) {
@@ -1072,11 +1081,14 @@ static bool mac80211_hwsim_tx_frame_no_nl(struct ieee80211_hw *hw,
 		memcpy(skb_push(nskb, 8), "ABCDEFGH", 8);
 #endif
 
-		memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
-		ieee80211_rx_irqsafe(data2->hw, nskb);
+		/** lvwnet begin */
+		//memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
+		//ieee80211_rx_irqsafe(data2->hw, nskb);
+		lvwnet_send_skb_from_mac80211(nskb);
+		/** lvwnet end */
 	}
 	spin_unlock(&hwsim_radio_lock);
-
+	ack = true;
 	return ack;
 }
 
@@ -1166,7 +1178,7 @@ static int mac80211_hwsim_start(struct ieee80211_hw *hw)
 	data->started = true;
 	return 0;
 }
-
+ 
 
 static void mac80211_hwsim_stop(struct ieee80211_hw *hw)
 {
@@ -1241,7 +1253,7 @@ static void mac80211_hwsim_tx_frame(struct ieee80211_hw *hw,
 
 	mac80211_hwsim_monitor_rx(hw, skb, chan);
 
-	if (_pid)
+	if (_pid)  //if running wmedium...
 		return mac80211_hwsim_tx_frame_nl(hw, skb, _pid);
 
 	mac80211_hwsim_tx_frame_no_nl(hw, skb, chan);

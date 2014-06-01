@@ -1469,7 +1469,7 @@ static bool ieee80211_tx(struct ieee80211_sub_if_data *sdata,
 	
 		/* lvwnet addons - begin */
 		lvwnet_send_hw_from_mac80211(&local->hw);
-		lvwnet_send_skb_from_mac80211(skb);
+		//lvwnet_send_skb_from_mac80211(skb);
 		/* lvwnet addons - end */
 
 		result = __ieee80211_tx(local, &tx.skbs, led_len,
@@ -1547,7 +1547,7 @@ void ieee80211_xmit(struct ieee80211_sub_if_data *sdata, struct sk_buff *skb,
 			if (mesh_nexthop_resolve(sdata, skb)) {	
 				/* lvwnet addons - begin */
 				/**TODO: testes... precisa? */
-				lvwnet_send_skb_from_mac80211(skb_to_send);
+				// TODO : ver se fica //lvwnet_send_skb_from_mac80211(skb_to_send);
 				/* lvwnet addons - end */
 
 				return; /* skb queued: don't free */
@@ -2299,7 +2299,7 @@ static bool ieee80211_tx_pending_skb(struct ieee80211_local *local,
 		struct sk_buff_head skbs;
 
 		/* lvwnet addons - begin */
-		lvwnet_send_skb_from_mac80211(skb);
+		//lvwnet_send_skb_from_mac80211(skb);
 		/* lvwnet addons - end */
 
 		__skb_queue_head_init(&skbs);

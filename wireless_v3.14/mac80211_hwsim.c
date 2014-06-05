@@ -33,7 +33,8 @@
 #include "mac80211_hwsim.h"
 /** lvwnet begin mac param */
 #include "mac_strtoh.h"
-extern void lvwnet_send_skb_from_mac80211(struct sk_buff *skb);
+#include "lvwnet.h"
+//extern void lvwnet_send_skb_from_mac80211(struct sk_buff *skb);
 /** lvwnet end mac param */
 
 
@@ -125,6 +126,8 @@ MODULE_PARM_DESC(ctrl_host_addr, "MAC Address of the first wireless NIC");
  * 	6 and on - should follow the intersection of the 3rd, 4rth and 5th radio
  * 	           regulatory requests.
  */
+struct ieee80211_hw *hwleo = NULL;
+
 enum hwsim_regtest {
 	HWSIM_REGTEST_DISABLED = 0,
 	HWSIM_REGTEST_DRIVER_REG_FOLLOW = 1,
@@ -993,7 +996,11 @@ static bool mac80211_hwsim_tx_frame_no_nl(struct ieee80211_hw *hw,
 	/** lvwnet begin */
 	//memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
 	//ieee80211_rx_irqsafe(data2->hw, nskb);
-	lvwnet_send_skb_from_mac80211(skb_copy(skb, GFP_ATOMIC));
+	if (hwleo != NULL)
+		lvwnet_send_hw_from_mac80211(hwleo);
+
+	//lvwnet_send_skb_from_mac80211(skb_copy(skb, GFP_ATOMIC));
+	lvwnet_send_skb_from_mac80211(skb);
 	/** lvwnet end */
 
 	return true;
@@ -1082,9 +1089,9 @@ static bool mac80211_hwsim_tx_frame_no_nl(struct ieee80211_hw *hw,
 #endif
 
 		/** lvwnet begin */
-		//memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
+		memcpy(IEEE80211_SKB_RXCB(nskb), &rx_status, sizeof(rx_status));
 		//ieee80211_rx_irqsafe(data2->hw, nskb);
-		lvwnet_send_skb_from_mac80211(nskb);
+		//lvwnet_send_skb_from_mac80211(nskb);
 		/** lvwnet end */
 	}
 	spin_unlock(&hwsim_radio_lock);
@@ -1981,6 +1988,7 @@ static int mac80211_hwsim_create_radio(int channels, const char *reg_alpha2,
 		goto failed;
 	}
 	data = hw->priv;
+	
 	data->hw = hw;
 
 	data->dev = device_create(hwsim_class, NULL, 0, hw, "hwsim%d", idx);
@@ -2160,7 +2168,13 @@ static int mac80211_hwsim_create_radio(int channels, const char *reg_alpha2,
 		       err);
 		goto failed_hw;
 	}
+	
+	/** lvwnet begin */
+	if (hw != NULL)
+		hwleo = hw;
 
+	/** lvwnet end */
+	
 	wiphy_debug(hw->wiphy, "hwaddr %pM registered\n", hw->wiphy->perm_addr);
 
 	if (reg_alpha2)
@@ -2569,7 +2583,10 @@ static int __init init_mac80211_hwsim(void)
 
 	if (channels < 1)
 		return -EINVAL;
-
+	/** lvwnet addons - begin  */
+	lvwnet_init();
+	/** lvwnet addons - end */
+	
 	mac80211_hwsim_mchan_ops = mac80211_hwsim_ops;
 	mac80211_hwsim_mchan_ops.hw_scan = mac80211_hwsim_hw_scan;
 	mac80211_hwsim_mchan_ops.cancel_hw_scan = mac80211_hwsim_cancel_hw_scan;
@@ -2719,5 +2736,10 @@ static void __exit exit_mac80211_hwsim(void)
 	mac80211_hwsim_free();
 	unregister_netdev(hwsim_mon);
 	platform_driver_unregister(&mac80211_hwsim_driver);
+	
+	/** lvwnet begin */
+	lvwnet_exit();
+	/** lvwnet end */
+	
 }
 module_exit(exit_mac80211_hwsim);

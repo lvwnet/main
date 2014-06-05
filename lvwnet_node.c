@@ -190,13 +190,15 @@ static void send_skb(struct sk_buff *skb)
         return;
     }
 
-	_headlen = skb_headlen(skb);
-    new_skb = skb_copy(skb, GFP_ATOMIC);
+	//_headlen = skb_headlen(skb);
+    //new_skb = skb_copy(skb, GFP_ATOMIC);
 
     if (send_all_to_controller == 1) {
-		ethernic_send_msg_type(new_skb, ctrl_host_addr_h, ethernic, 0x07);
+		//ethernic_send_msg_type(new_skb, ctrl_host_addr_h, ethernic, 0x07);
+		ethernic_send_msg_type(skb, ctrl_host_addr_h, ethernic, 0x07);
 	} else {
-		send_data_to_peers(new_skb);
+		//send_data_to_peers(new_skb);
+		send_data_to_peers(skb);
 	}
 }
 
@@ -341,8 +343,8 @@ int ethernic_recv (struct sk_buff *skb, struct net_device *dev, struct packet_ty
 
 			//skb_recv_to_ieee80211rx->csum = skb_checksum_complete(skb_recv_to_ieee80211rx);
 			//printk(KERN_DEBUG "lvwnet_node: csum ->[%d, %d] \n", skb_recv->csum, skb_checksum_complete(skb_recv));
-			ieee80211_rx_irqsafe(hw, skb_recv);
-			//ieee80211_rx(hw, skb_recv);
+			//ieee80211_rx_irqsafe(hw, skb_recv);
+			ieee80211_rx(hw, skb_recv);
 		 
         } 
         goto ethernic_recv_out;
@@ -501,7 +503,7 @@ ethernic_recv_out:
 void send_data_to_peers(struct sk_buff* skb)
 {
 	//struct sk_buff* _skb;
-	struct sk_buff* _new_data;
+	//struct sk_buff* _new_data;
 	struct sk_buff* _skb_to_send;
     //struct lvwnet_only_flag_header *datahdr;
     //struct lvwnet_data_header *datahdr;
@@ -515,7 +517,7 @@ void send_data_to_peers(struct sk_buff* skb)
 	//printk(KERN_INFO "lvwnet_node: 1 sending data [%*phC], %s:%d\n", _data, __func__, __LINE__);
 	//print_hex_dump(KERN_DEBUG, "lvwnet_node:1 raw: ", DUMP_PREFIX_ADDRESS,
 	//				16, 1, _data, 64, 1);
-    _new_data = skb_copy(skb, GFP_ATOMIC); /** TODO needs this copy? */
+    //_new_data = skb_copy(skb, GFP_ATOMIC); /** TODO needs this copy? */
 
 	//return;
     //_skb = alloc_skb(sizeof(struct ethhdr)+sizeof(struct lvwnet_data_header) + 1410, GFP_KERNEL);

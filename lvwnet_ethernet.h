@@ -264,6 +264,7 @@ int ethernic_send_msg_type (struct sk_buff *skb, uint8_t *dest_mac,
 
 ethernic_send_out:
 	spin_unlock(&lvwnet_send_lock);
+	//dev_kfree_skb (skb); //?
 
 	return 0;
 }

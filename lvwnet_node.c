@@ -103,8 +103,11 @@ static struct packet_type pkt_type_lvwnet = {
 /** externs vars from main.c (mac80211) */
 extern void (*lvwnet_ptr_hw)(struct ieee80211_hw *hw);
 extern void (*lvwnet_ptr_skb)(struct sk_buff *skb);
+//extern void (*lvwnet_ptr_skb)(struct sk_buff *skb);
 extern void lvwnet_set_loaded(void);
+extern void lvwnet_set_loaded(void) { }
 extern void lvwnet_set_unloaded(void);
+extern void lvwnet_set_unloaded(void) { }
 
 
 void reg_timer_routine(unsigned long data)
@@ -178,8 +181,8 @@ static void __unset_ptrs_hw(void)
  */
 static void send_skb(struct sk_buff *skb)
 {
-    struct sk_buff *new_skb;
-    int _headlen = -1;
+    //struct sk_buff *new_skb;
+    //int _headlen = -1;
 
     if (lvwnet_ptr_skb == NULL) {
         printk(KERN_ALERT "lvwnet_node: ptr_skb is NULL. from [%s]\n", __func__);

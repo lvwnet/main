@@ -6,6 +6,14 @@ static int  __init_sysfs(void);
 static void __exit_sysfs(void);
 
 
+
+#define LVWNET_ATTR_RO(_name) \
+         static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
+
+#define LVWNET_ATTR(_name) \
+         static struct kobj_attribute _name##_attr = \
+                 __ATTR(_name, 0644, _name##_show, _name##_store)
+
 /**
  * sysfs objects
  */
@@ -29,15 +37,16 @@ static ssize_t sysfs_hw_show(struct kobject *kobj, struct kobj_attribute *attr, 
     }*/
     return sprintf(buf,"%s\n", "TODO...");
 }
+LVWNET_ATTR_RO(sysfs_hw);
 
-/** Show fw version of real wireless nic */
-static ssize_t sysfs_perm_addr(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_perm_addr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     return sprintf(buf,"%s\n", "TODO...");
 }
+LVWNET_ATTR_RO(sysfs_perm_addr);
 
-/** Show fw version of real wireless nic */
-static ssize_t sysfs_qtd_peers(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+/** Show the qtd of all connected peers */
+static ssize_t sysfs_qtd_peers_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     int count = 0;
     struct lvwnet_peer_info* temp_peer = NULL;
@@ -55,9 +64,10 @@ static ssize_t sysfs_qtd_peers(struct kobject *kobj, struct kobj_attribute *attr
     }
     return sprintf(buf,"%d\n", count);
 }
+LVWNET_ATTR_RO(sysfs_qtd_peers);
 
 /** Show fw version of real wireless nic */
-static ssize_t sysfs_qtd_nodes(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_qtd_nodes_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     int count = 0;
     struct lvwnet_node_info* temp_node = NULL;
@@ -74,9 +84,10 @@ static ssize_t sysfs_qtd_nodes(struct kobject *kobj, struct kobj_attribute *attr
     }
     return sprintf(buf,"%d\n", count);
 }
+LVWNET_ATTR_RO(sysfs_qtd_nodes);
 
-/** Show fw version of real wireless nic */
-static ssize_t sysfs_oper_mode(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+
+static ssize_t sysfs_oper_mode_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     if (is_controller == 0) {
         return sprintf(buf,"%s\n", "node");
@@ -84,8 +95,9 @@ static ssize_t sysfs_oper_mode(struct kobject *kobj, struct kobj_attribute *attr
         return sprintf(buf,"%s\n", "controller");
     }
 }
+LVWNET_ATTR_RO(sysfs_oper_mode);
 
-static ssize_t sysfs_peers_list(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_peers_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     struct lvwnet_peer_info* temp_peer = NULL;
     int _str_size = 0;
@@ -106,8 +118,9 @@ static ssize_t sysfs_peers_list(struct kobject *kobj, struct kobj_attribute *att
     }
     return strlen(buf);
 }
+LVWNET_ATTR_RO(sysfs_peers_list);
 
-static ssize_t sysfs_peers_unreachable_list(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_peers_unreachable_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     struct lvwnet_peer_info* temp_peer = NULL;
     int _str_size = 0;
@@ -128,8 +141,9 @@ static ssize_t sysfs_peers_unreachable_list(struct kobject *kobj, struct kobj_at
     }
     return strlen(buf);
 }
+LVWNET_ATTR_RO(sysfs_peers_unreachable_list);
 
-static ssize_t sysfs_nodes_list(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_nodes_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     struct lvwnet_node_info* temp_node = NULL;
     int _str_size = 0;
@@ -152,9 +166,9 @@ static ssize_t sysfs_nodes_list(struct kobject *kobj, struct kobj_attribute *att
     }
     return strlen(buf);
 }
+LVWNET_ATTR_RO(sysfs_nodes_list);
 
-/** Show fw version of real wireless nic */
-static ssize_t sysfs_nodes_gnuplot(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_nodes_gnuplot_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     struct lvwnet_node_info* temp_node = NULL;
     int _str_size = 0;
@@ -174,26 +188,31 @@ static ssize_t sysfs_nodes_gnuplot(struct kobject *kobj, struct kobj_attribute *
     }
     return strlen(buf);
 }
+LVWNET_ATTR_RO(sysfs_nodes_gnuplot);
 
-static ssize_t sysfs_qtd_all_msg(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_qtd_all_msg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     return sprintf(buf,"%ld\n", qtd_msg_all);
 }
+LVWNET_ATTR_RO(sysfs_qtd_all_msg);
 
-static ssize_t sysfs_qtd_data_msg(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_qtd_data_msg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     return sprintf(buf,"%ld\n", qtd_msg_data);
 }
+LVWNET_ATTR_RO(sysfs_qtd_data_msg);
 
-static ssize_t sysfs_qtd_info_msg(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_qtd_info_msg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     return sprintf(buf,"%ld\n", qtd_msg_peer_info);
 }
+LVWNET_ATTR_RO(sysfs_qtd_info_msg);
 
-static ssize_t sysfs_qtd_reg_omni_msg(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t sysfs_qtd_reg_omni_msg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
     return sprintf(buf,"%ld\n", qtd_msg_reg_omni);
 }
+LVWNET_ATTR_RO(sysfs_qtd_reg_omni_msg);
 
 static ssize_t sysfs_x_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -206,6 +225,8 @@ static ssize_t sysfs_x_pos_store(struct kobject *kobj, struct kobj_attribute *at
     sscanf(buf,"%d", &x_pos);
     return count;
 }
+LVWNET_ATTR(sysfs_x_pos);
+
 
 static ssize_t sysfs_y_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -218,6 +239,8 @@ static ssize_t sysfs_y_pos_store(struct kobject *kobj, struct kobj_attribute *at
     sscanf(buf,"%d", &y_pos);
     return count;
 }
+LVWNET_ATTR(sysfs_y_pos);
+
 
 static ssize_t sysfs_z_pos_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -231,7 +254,9 @@ static ssize_t sysfs_z_pos_store(struct kobject *kobj, struct kobj_attribute *at
 	pos_changed = 1;
     return count;
 }
+LVWNET_ATTR(sysfs_z_pos);
 
+/*
 static struct kobj_attribute fw_attribute = __ATTR(fw_version, 0666, sysfs_hw_show, NULL);
 static struct kobj_attribute perm_addr_attribute = __ATTR(perm_addr, 0666, sysfs_perm_addr, NULL);
 static struct kobj_attribute qtd_peers = __ATTR(qtd_peers, 0666, sysfs_qtd_peers, NULL);
@@ -248,7 +273,7 @@ static struct kobj_attribute qtd_reg_omni_msg = __ATTR(qtd_reg_omni_msg, 0666, s
 static struct kobj_attribute x_pos_kobj = __ATTR(x_pos, 0666, sysfs_x_pos_show, sysfs_x_pos_store);
 static struct kobj_attribute y_pos_kobj = __ATTR(y_pos, 0666, sysfs_y_pos_show, sysfs_y_pos_store);
 static struct kobj_attribute z_pos_kobj = __ATTR(z_pos, 0666, sysfs_z_pos_show, sysfs_z_pos_store);
-
+*/
 
 /** 
  * TODO: colocar sysfs para:
@@ -262,23 +287,39 @@ static struct kobj_attribute z_pos_kobj = __ATTR(z_pos, 0666, sysfs_z_pos_show, 
 
 
 static struct attribute *attrs[] = {
-    &fw_attribute.attr,
-    &perm_addr_attribute.attr,
-    &qtd_peers.attr,
-    &qtd_nodes.attr,
-    &oper_mode.attr,
-    &peers_list.attr,
-    &peers_unreachable_list.attr,
-    &nodes_list.attr,
-    &nodes_gnuplot.attr,
-    &qtd_all_msg.attr,
-    &qtd_data_msg.attr,
-    &qtd_info_msg.attr,
-    &qtd_reg_omni_msg.attr,
-    &x_pos_kobj.attr,
-    &y_pos_kobj.attr,
-    &z_pos_kobj.attr,
-    NULL,
+		&sysfs_hw_attr.attr,
+		&sysfs_perm_addr_attr.attr,
+		&sysfs_qtd_peers_attr.attr,
+		&sysfs_qtd_nodes_attr.attr,
+		&sysfs_oper_mode_attr.attr,
+		&sysfs_peers_list_attr.attr,
+		&sysfs_peers_unreachable_list_attr.attr,
+		&sysfs_nodes_list_attr.attr,
+		&sysfs_nodes_gnuplot_attr.attr,
+		&sysfs_qtd_all_msg_attr.attr,
+		&sysfs_qtd_data_msg_attr.attr,
+		&sysfs_qtd_info_msg_attr.attr,
+		&sysfs_qtd_reg_omni_msg_attr.attr,
+		&sysfs_x_pos_attr.attr,
+		&sysfs_y_pos_attr.attr,
+		&sysfs_z_pos_attr.attr,
+		/*&fw_attribute.attr,
+		&qtd_peers.attr,
+		&perm_addr_attribute.attr,
+		&qtd_nodes.attr,
+		&oper_mode.attr,
+		&peers_list.attr,
+		&peers_unreachable_list.attr,
+		&nodes_list.attr,
+		&nodes_gnuplot.attr,
+		&qtd_all_msg.attr,
+		&qtd_data_msg.attr,
+		&qtd_info_msg.attr,
+		&qtd_reg_omni_msg.attr,
+		&x_pos_kobj.attr,
+		&y_pos_kobj.attr,
+		&z_pos_kobj.attr,*/
+		NULL,
 };
 
 static struct attribute_group attr_group = {

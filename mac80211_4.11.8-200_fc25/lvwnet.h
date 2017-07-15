@@ -29,7 +29,7 @@ void lvwnet_init(void)
     lvwnet_status = 0;
     lvwnet_ptr_hw = NULL;
     lvwnet_ptr_skb = NULL;
-    printk(KERN_INFO "lvwnet: modified mac80211 started...\n");
+    printk(KERN_INFO "lvwnet: modified mac80211 started...[1.47]\n");
 }
 
 void lvwnet_exit(void)
@@ -62,10 +62,11 @@ EXPORT_SYMBOL_GPL(lvwnet_is_loaded);
 /* set lvwnet as loaded */
 void lvwnet_set_loaded(void)
 {
+    printk(KERN_INFO "lvwnet_mac80211: setting lvwnet as loaded. \n ");
     spin_lock(&lvwnet_lock);
     lvwnet_status = 1;
     spin_unlock(&lvwnet_lock);
-    printk(KERN_INFO "lvwnet: lvwnet is now set as loaded. \n ");
+    printk(KERN_INFO "lvwnet_mac80211: lvwnet is now set as loaded. \n ");
 
 }
 EXPORT_SYMBOL_GPL(lvwnet_set_loaded);
@@ -102,6 +103,7 @@ void lvwnet_send_skb_from_mac80211(struct sk_buff *skb)
         if (lvwnet_ptr_skb == NULL) {
             printk(KERN_INFO "lvwnet: lvwnet_ptr_skb is NULL! [%s].\n", __func__);
         } else {
+            printk(KERN_INFO "lvwnet: lvwnet_ptr_skb has been sent [%s].\n", __func__);
             (lvwnet_ptr_skb)(skb);
         }
     } else {

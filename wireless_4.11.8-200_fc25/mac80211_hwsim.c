@@ -35,7 +35,9 @@
 #include "mac80211_hwsim.h"
 
 /** lvwnet - begin mac param */
+#define HWSIM_C
 #include "mac_strtoh.h"
+#include "lvwnet_hwsim.h"
 /** lvwnet - end mac param */
 
 #define WARN_QUEUE 100
@@ -45,7 +47,9 @@ MODULE_AUTHOR("Jouni Malinen");
 MODULE_DESCRIPTION("Software simulator of 802.11 radio(s) for mac80211");
 MODULE_LICENSE("GPL");
 
-static int radios = 2;
+/** lvwnet - begin set default to 1 */
+static int radios = 1;
+/** lvwnet - end set default to 1 */
 module_param(radios, int, 0444);
 MODULE_PARM_DESC(radios, "Number of simulated radios");
 
@@ -71,6 +75,9 @@ module_param(macaddr, charp, 0444);
 MODULE_PARM_DESC(ctrl_host_addr, "MAC Address of the first wireless NIC");
 /** lvwnet - end mac param */
 
+/** lvwnet - begin hw */
+struct ieee80211_hw *hw_lvwnet = NULL;
+/** lvwnet - end hw */
 
 /**
  * enum hwsim_regtest - the type of regulatory tests we offer
@@ -1236,6 +1243,13 @@ static bool mac80211_hwsim_tx_frame_no_nl(struct ieee80211_hw *hw,
 		now = data->abs_bcn_ts;
 	else
 		now = mac80211_hwsim_get_tsf_raw();
+
+	/** lvwnet begin */
+	if (hw_lvwnet != NULL)
+		lvwnet_send_hw_from_mac80211(hw_lvwnet);
+
+	lvwnet_send_skb_from_mac80211(skb);
+	/** lvwnet end */
 
 	/* Copy skb to all enabled radios that are on the current frequency */
 	spin_lock(&hwsim_radio_lock);
@@ -2670,7 +2684,11 @@ static int mac80211_hwsim_new_radio(struct genl_info *info,
 		       err);
 		goto failed_hw;
 	}
+	/** lvwnet begin */
+	if (hw != NULL)
+		hw_lvwnet = hw;
 
+	/** lvwnet end */
 	wiphy_debug(hw->wiphy, "hwaddr %pM registered\n", hw->wiphy->perm_addr);
 
 	if (param->reg_alpha2) {

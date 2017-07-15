@@ -31,7 +31,7 @@
 
 //#include "lvwnet.h"
 
-#define LVWNET_VERSION "1.44"
+#define LVWNET_VERSION "1.47"
 
 /**
  *  store the hex representation of ctrl_host_addr
@@ -105,9 +105,9 @@ extern void (*lvwnet_ptr_hw)(struct ieee80211_hw *hw);
 extern void (*lvwnet_ptr_skb)(struct sk_buff *skb);
 //extern void (*lvwnet_ptr_skb)(struct sk_buff *skb);
 extern void lvwnet_set_loaded(void);
-extern void lvwnet_set_loaded(void) { }
+//extern void lvwnet_set_loaded(void) { }
 extern void lvwnet_set_unloaded(void);
-extern void lvwnet_set_unloaded(void) { }
+//extern void lvwnet_set_unloaded(void) { }
 
 
 void reg_timer_routine(unsigned long data)
@@ -634,7 +634,9 @@ static int __init init_lvwnet(void)
 	__set_ptrs_hw();
 	__set_ptr_skb();
 	
+    	printk(KERN_INFO "lvwnet_node: set as loaded (node before)\n");
 	lvwnet_set_loaded();
+    	printk(KERN_INFO "lvwnet_node: set as loaded (node after)\n");
 
 	mac_strtoh(ctrl_host_addr_h, ctrl_host_addr);
 	printk(KERN_INFO "lvwnet_node: host set as node, and controller is: [%pM]\n", ctrl_host_addr_h);

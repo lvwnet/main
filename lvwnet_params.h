@@ -18,7 +18,7 @@ MODULE_PARM_DESC (func_debug, "Enable debug of lvwnet (all called functions)");
 
 
 /**
- * Define if debug is active for lvwnet
+ * Define if debug is active for lvwne
  * 0 - disabled
  * 1 - enabled
  */
